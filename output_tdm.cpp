@@ -290,7 +290,7 @@ void AudioOutputTDM::config_tdm(void)
 //PLL:
 	int fs = AUDIO_SAMPLE_RATE_EXACT;
 	// PLL between 27*24 = 648MHz und 54*24=1296MHz
-	int n1 = 4; //SAI prescaler 4 => (n1*n2) = multiple of 4
+	int n1 = 16; //SAI prescaler 4 => (n1*n2) = multiple of 4
 	int n2 = 1 + (24000000 * 27) / (fs * 256 * n1);
 
 	double C = ((double)fs * 256 * n1 * n2) / 24000000;
@@ -302,7 +302,7 @@ void AudioOutputTDM::config_tdm(void)
 	CCM_CSCMR1 = (CCM_CSCMR1 & ~(CCM_CSCMR1_SAI1_CLK_SEL_MASK))
 		   | CCM_CSCMR1_SAI1_CLK_SEL(2); // &0x03 // (0,1,2): PLL3PFD0, PLL5, PLL4
 
-	n1 = n1 / 2; //Double Speed for TDM
+	//n1 = n1 / 2; //Double Speed for TDM
 
 	CCM_CS1CDR = (CCM_CS1CDR & ~(CCM_CS1CDR_SAI1_CLK_PRED_MASK | CCM_CS1CDR_SAI1_CLK_PODF_MASK))
 		   | CCM_CS1CDR_SAI1_CLK_PRED(n1-1) // &0x07
@@ -327,9 +327,9 @@ void AudioOutputTDM::config_tdm(void)
 	I2S1_RMR = 0;
 	I2S1_RCR1 = I2S_RCR1_RFW(4);
 	I2S1_RCR2 = I2S_RCR2_SYNC(rsync) | I2S_TCR2_BCP | I2S_RCR2_MSEL(1)
-		| I2S_RCR2_BCD | I2S_RCR2_DIV(0);
+		| I2S_RCR2_BCD | I2S_RCR2_DIV(1); //BCIK changed DIV from 0 to 1
 	I2S1_RCR3 = I2S_RCR3_RCE;
-	I2S1_RCR4 = I2S_RCR4_FRSZ(7) | I2S_RCR4_SYWD(0) | I2S_RCR4_MF
+	I2S1_RCR4 = I2S_RCR4_FRSZ(3) | I2S_RCR4_SYWD(0) | I2S_RCR4_MF // changed FRSZ 7 to 1
 		| I2S_RCR4_FSE | I2S_RCR4_FSD;
 	I2S1_RCR5 = I2S_RCR5_WNW(31) | I2S_RCR5_W0W(31) | I2S_RCR5_FBT(31);
 
