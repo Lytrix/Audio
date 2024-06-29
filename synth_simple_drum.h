@@ -84,8 +84,8 @@ private:
   uint32_t wav_phasor;      
   uint32_t wav_phasor2;     
   
-  int16_t wav_amplitude1;
-  int16_t wav_amplitude2;
+  int32_t wav_amplitude1;
+  int32_t wav_amplitude2;
   
   uint32_t wav_increment;
   int32_t  wav_pitch_mod;

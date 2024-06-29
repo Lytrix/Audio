@@ -33,7 +33,7 @@
 DMAMEM __attribute__((aligned(32))) static uint32_t i2s_rx_buffer[AUDIO_BLOCK_SAMPLES];
 audio_block_t * AudioInputI2S::block_left = NULL;
 audio_block_t * AudioInputI2S::block_right = NULL;
-uint16_t AudioInputI2S::block_offset = 0;
+uint32_t AudioInputI2S::block_offset = 0;
 bool AudioInputI2S::update_responsibility = false;
 DMAChannel AudioInputI2S::dma(false);
 
@@ -93,8 +93,8 @@ void AudioInputI2S::begin(void)
 void AudioInputI2S::isr(void)
 {
 	uint32_t daddr, offset;
-	const int16_t *src, *end;
-	int16_t *dest_left, *dest_right;
+	const int32_t *src, *end;
+	int32_t *dest_left, *dest_right;
 	audio_block_t *left, *right;
 
 #if defined(KINETISK) || defined(__IMXRT1062__)
@@ -105,14 +105,14 @@ void AudioInputI2S::isr(void)
 	if (daddr < (uint32_t)i2s_rx_buffer + sizeof(i2s_rx_buffer) / 2) {
 		// DMA is receiving to the first half of the buffer
 		// need to remove data from the second half
-		src = (int16_t *)&i2s_rx_buffer[AUDIO_BLOCK_SAMPLES/2];
-		end = (int16_t *)&i2s_rx_buffer[AUDIO_BLOCK_SAMPLES];
+		src = (int32_t *)&i2s_rx_buffer[AUDIO_BLOCK_SAMPLES/2];
+		end = (int32_t *)&i2s_rx_buffer[AUDIO_BLOCK_SAMPLES];
 		if (AudioInputI2S::update_responsibility) AudioStream::update_all();
 	} else {
 		// DMA is receiving to the second half of the buffer
 		// need to remove data from the first half
-		src = (int16_t *)&i2s_rx_buffer[0];
-		end = (int16_t *)&i2s_rx_buffer[AUDIO_BLOCK_SAMPLES/2];
+		src = (int32_t *)&i2s_rx_buffer[0];
+		end = (int32_t *)&i2s_rx_buffer[AUDIO_BLOCK_SAMPLES/2];
 	}
 	left = AudioInputI2S::block_left;
 	right = AudioInputI2S::block_right;
@@ -250,8 +250,8 @@ void AudioInputI2Sslave::begin(void)
 ***************************************************************************************/
 #define NUM_SAMPLES (AUDIO_BLOCK_SAMPLES / 2)
 
-DMAMEM static int16_t i2s_rx_buffer1[NUM_SAMPLES * 2];
-DMAMEM static int16_t i2s_rx_buffer2[NUM_SAMPLES * 2];
+DMAMEM static int32_t i2s_rx_buffer1[NUM_SAMPLES * 2];
+DMAMEM static int32_t i2s_rx_buffer2[NUM_SAMPLES * 2];
 audio_block_t * AudioInputI2S::block_left = NULL;
 audio_block_t * AudioInputI2S::block_right = NULL;
 DMAChannel AudioInputI2S::dma1(false);
@@ -324,7 +324,7 @@ void AudioInputI2S::update(void)
 
 //todo : ("unroll-loops") or optimize better
 inline __attribute__((always_inline, hot, optimize("O2") ))
-static void deinterleave(const int16_t *src,audio_block_t *block_left, audio_block_t *block_right, const unsigned offset)
+static void deinterleave(const int32_t *src,audio_block_t *block_left, audio_block_t *block_right, const unsigned offset)
 {
 	//we can assume that we have either two blocks or none
 

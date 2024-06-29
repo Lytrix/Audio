@@ -63,9 +63,9 @@ class BandLimitedWaveform
 {
 public:
   BandLimitedWaveform (void) ;
-  int16_t generate_sawtooth (uint32_t new_phase, int i) ;
-  int16_t generate_square (uint32_t new_phase, int i) ;
-  int16_t generate_pulse (uint32_t new_phase, uint32_t pulse_width, int i) ;
+  int32_t generate_sawtooth (uint32_t new_phase, int i) ;
+  int32_t generate_square (uint32_t new_phase, int i) ;
+  int32_t generate_pulse (uint32_t new_phase, uint32_t pulse_width, int i) ;
   void init_sawtooth (uint32_t freq_word) ;
   void init_square (uint32_t freq_word) ;
   void init_pulse (uint32_t freq_word, uint32_t pulse_width) ;
@@ -162,7 +162,7 @@ public:
 		phase_offset = 0;
 		begin (t_type);
 	}
-	void arbitraryWaveform(const int16_t *data, float maxFreq) {
+	void arbitraryWaveform(const int32_t *data, float maxFreq) {
 		arbdata = data;
 	}
 	virtual void update(void);
@@ -173,10 +173,10 @@ private:
 	uint32_t phase_offset;
 	int32_t  magnitude;
 	uint32_t pulse_width;
-	const int16_t *arbdata;
-	int16_t  sample; // for WAVEFORM_SAMPLE_HOLD
+	const int32_t *arbdata;
+	int32_t  sample; // for WAVEFORM_SAMPLE_HOLD
 	short    tone_type;
-	int16_t  tone_offset;
+	int32_t  tone_offset;
         BandLimitedWaveform band_limit_waveform ;
 };
 
@@ -229,7 +229,7 @@ public:
 		frequency(t_freq);
 		begin (t_type) ;
 	}
-	void arbitraryWaveform(const int16_t *data, float maxFreq) {
+	void arbitraryWaveform(const int32_t *data, float maxFreq) {
 		arbdata = data;
 	}
 	void frequencyModulation(float octaves) {
@@ -258,10 +258,10 @@ private:
 	uint32_t phase_increment;
 	uint32_t modulation_factor;
 	int32_t  magnitude;
-	const int16_t *arbdata;
+	const int32_t *arbdata;
 	uint32_t phasedata[AUDIO_BLOCK_SAMPLES];
-	int16_t  sample; // for WAVEFORM_SAMPLE_HOLD
-	int16_t  tone_offset;
+	int32_t  sample; // for WAVEFORM_SAMPLE_HOLD
+	int32_t  tone_offset;
 	uint8_t  tone_type;
 	uint8_t  modulation_type;
         BandLimitedWaveform band_limit_waveform ;

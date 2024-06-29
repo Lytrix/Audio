@@ -122,7 +122,7 @@ void AudioEffectFlange::update(void)
 {
   audio_block_t *block;
   int idx;
-  short *bp;
+  int32_t *bp;
   short frac;
   int idx1;
 

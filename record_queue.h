@@ -47,7 +47,7 @@ public:
 	}
 	int available(void);
 	void clear(void);
-	int16_t * readBuffer(void);
+	int32_t * readBuffer(void);
 	void freeBuffer(void);
 	void end(void) {
 		enabled = 0;

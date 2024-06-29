@@ -31,8 +31,8 @@ void AudioEffectDelay::update(void)
 {
 	audio_block_t *output;
 	uint32_t head, tail, count, channel, index, prev, offset;
-	const int16_t *src, *end;
-	int16_t *dst;
+	const int32_t *src, *end;
+	int32_t *dst;
 
 	// grab incoming data and put it into the queue
 	head = headindex;

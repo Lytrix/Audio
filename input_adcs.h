@@ -44,8 +44,8 @@ public:
 private:
         static audio_block_t *block_left;
         static audio_block_t *block_right;
-        static uint16_t offset_left;
-        static uint16_t offset_right;
+        static uint32_t offset_left;
+        static uint32_t offset_right;
         static int32_t hpf_y1[2];
         static int32_t hpf_x1[2];
 

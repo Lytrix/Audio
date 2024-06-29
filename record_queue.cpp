@@ -55,7 +55,7 @@ void AudioRecordQueue::clear(void)
 	tail = t;
 }
 
-int16_t * AudioRecordQueue::readBuffer(void)
+int32_t * AudioRecordQueue::readBuffer(void)
 {
 	uint32_t t;
 

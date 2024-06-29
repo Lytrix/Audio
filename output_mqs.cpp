@@ -35,8 +35,8 @@ audio_block_t * AudioOutputMQS::block_left_1st = NULL;
 audio_block_t * AudioOutputMQS::block_right_1st = NULL;
 audio_block_t * AudioOutputMQS::block_left_2nd = NULL;
 audio_block_t * AudioOutputMQS::block_right_2nd = NULL;
-uint16_t  AudioOutputMQS::block_left_offset = 0;
-uint16_t  AudioOutputMQS::block_right_offset = 0;
+uint32_t  AudioOutputMQS::block_left_offset = 0;
+uint32_t  AudioOutputMQS::block_right_offset = 0;
 bool AudioOutputMQS::update_responsibility = false;
 DMAChannel AudioOutputMQS::dma(false);
 DMAMEM __attribute__((aligned(32)))
@@ -76,7 +76,7 @@ void AudioOutputMQS::begin(void)
 
 void AudioOutputMQS::isr(void)
 {
-	int16_t *dest;
+	int32_t *dest;
 	audio_block_t *blockL, *blockR;
 	uint32_t saddr, offsetL, offsetR;
 
@@ -85,12 +85,12 @@ void AudioOutputMQS::isr(void)
 	if (saddr < (uint32_t)I2S3_tx_buffer + sizeof(I2S3_tx_buffer) / 2) {
 		// DMA is transmitting the first half of the buffer
 		// so we must fill the second half
-		dest = (int16_t *)&I2S3_tx_buffer[AUDIO_BLOCK_SAMPLES/2];
+		dest = (int32_t *)&I2S3_tx_buffer[AUDIO_BLOCK_SAMPLES/2];
 		if (AudioOutputMQS::update_responsibility) AudioStream::update_all();
 	} else {
 		// DMA is transmitting the second half of the buffer
 		// so we must fill the first half
-		dest = (int16_t *)I2S3_tx_buffer;
+		dest = (int32_t *)I2S3_tx_buffer;
 	}
 
 	blockL = AudioOutputMQS::block_left_1st;

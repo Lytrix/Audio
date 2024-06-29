@@ -70,7 +70,7 @@ void AudioEffectChorus::voices(int n_chorus)
 void AudioEffectChorus::update(void)
 {
   audio_block_t *block;
-  short *bp;
+  int32_t *bp;
   int sum;
   int c_idx;
 

@@ -37,7 +37,7 @@ audio_block_t * AudioInputI2SOct::block_ch5 = NULL;
 audio_block_t * AudioInputI2SOct::block_ch6 = NULL;
 audio_block_t * AudioInputI2SOct::block_ch7 = NULL;
 audio_block_t * AudioInputI2SOct::block_ch8 = NULL;
-uint16_t AudioInputI2SOct::block_offset = 0;
+uint32_t AudioInputI2SOct::block_offset = 0;
 bool AudioInputI2SOct::update_responsibility = false;
 DMAChannel AudioInputI2SOct::dma(false);
 
@@ -82,8 +82,8 @@ void AudioInputI2SOct::begin(void)
 void AudioInputI2SOct::isr(void)
 {
 	uint32_t daddr, offset;
-	const int16_t *src;
-	int16_t *dest1, *dest2, *dest3, *dest4, *dest5, *dest6, *dest7, *dest8;
+	const int32_t *src;
+	int32_t *dest1, *dest2, *dest3, *dest4, *dest5, *dest6, *dest7, *dest8;
 
 	//digitalWriteFast(3, HIGH);
 	daddr = (uint32_t)(dma.TCD->DADDR);
@@ -92,12 +92,12 @@ void AudioInputI2SOct::isr(void)
 	if (daddr < (uint32_t)i2s_rx_buffer + sizeof(i2s_rx_buffer) / 2) {
 		// DMA is receiving to the first half of the buffer
 		// need to remove data from the second half
-		src = (int16_t *)((uint32_t)i2s_rx_buffer + sizeof(i2s_rx_buffer) / 2);
+		src = (int32_t *)((uint32_t)i2s_rx_buffer + sizeof(i2s_rx_buffer) / 2);
 		if (update_responsibility) update_all();
 	} else {
 		// DMA is receiving to the second half of the buffer
 		// need to remove data from the first half
-		src = (int16_t *)&i2s_rx_buffer[0];
+		src = (int32_t *)&i2s_rx_buffer[0];
 	}
 	if (block_ch1) {
 		offset = block_offset;

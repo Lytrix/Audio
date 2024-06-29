@@ -33,12 +33,12 @@
 
 #define COEF_HPF_DCBLOCK    (1048300<<10)  // DC Removal filter coefficient in S1.30
 
-DMAMEM __attribute__((aligned(32))) static uint16_t left_buffer[AUDIO_BLOCK_SAMPLES];
-DMAMEM __attribute__((aligned(32))) static uint16_t right_buffer[AUDIO_BLOCK_SAMPLES];
+DMAMEM __attribute__((aligned(32))) static uint32_t left_buffer[AUDIO_BLOCK_SAMPLES];
+DMAMEM __attribute__((aligned(32))) static uint32_t right_buffer[AUDIO_BLOCK_SAMPLES];
 audio_block_t * AudioInputAnalogStereo::block_left = NULL;
 audio_block_t * AudioInputAnalogStereo::block_right = NULL;
-uint16_t AudioInputAnalogStereo::offset_left = 0;
-uint16_t AudioInputAnalogStereo::offset_right = 0;
+uint32_t AudioInputAnalogStereo::offset_left = 0;
+uint32_t AudioInputAnalogStereo::offset_right = 0;
 int32_t AudioInputAnalogStereo::hpf_y1[2] = { 0, 0 };
 int32_t AudioInputAnalogStereo::hpf_x1[2] = { 0, 0 };
 bool AudioInputAnalogStereo::update_responsibility = false;
@@ -70,12 +70,12 @@ void AudioInputAnalogStereo::init(uint8_t pin0, uint8_t pin1)
     // Note for review:
     // Probably not useful to spin cycles here stabilizing
     // since DC blocking is similar to te external analog filters
-    tmp = (uint16_t) analogRead(pin0);
+    tmp = (uint32_t) analogRead(pin0);
     tmp = ( ((int32_t) tmp) << 14);
     hpf_x1[0] = tmp;   // With constant DC level x1 would be x0
     hpf_y1[0] = 0;     // Output will settle here when stable
 
-    tmp = (uint16_t) analogReadADC1(pin1);
+    tmp = (uint32_t) analogReadADC1(pin1);
     tmp = ( ((int32_t) tmp) << 14);
     hpf_x1[1] = tmp;   // With constant DC level x1 would be x0
     hpf_y1[1] = 0;     // Output will settle here when stable
@@ -144,8 +144,8 @@ void AudioInputAnalogStereo::init(uint8_t pin0, uint8_t pin1)
 void AudioInputAnalogStereo::isr0(void)
 {
 	uint32_t daddr, offset;
-	const uint16_t *src, *end;
-	uint16_t *dest;
+	const uint32_t *src, *end;
+	uint32_t *dest;
 
 	daddr = (uint32_t)(dma0.TCD->DADDR);
 	dma0.clearInterrupt();
@@ -154,20 +154,20 @@ void AudioInputAnalogStereo::isr0(void)
 	if (daddr < (uint32_t)left_buffer + sizeof(left_buffer) / 2) {
 		// DMA is receiving to the first half of the buffer
 		// need to remove data from the second half
-		src = (uint16_t *)&left_buffer[AUDIO_BLOCK_SAMPLES/2];
-		end = (uint16_t *)&left_buffer[AUDIO_BLOCK_SAMPLES];
+		src = (uint32_t *)&left_buffer[AUDIO_BLOCK_SAMPLES/2];
+		end = (uint32_t *)&left_buffer[AUDIO_BLOCK_SAMPLES];
 	} else {
 		// DMA is receiving to the second half of the buffer
 		// need to remove data from the first half
-		src = (uint16_t *)&left_buffer[0];
-		end = (uint16_t *)&left_buffer[AUDIO_BLOCK_SAMPLES/2];
+		src = (uint32_t *)&left_buffer[0];
+		end = (uint32_t *)&left_buffer[AUDIO_BLOCK_SAMPLES/2];
 		//if (update_responsibility) AudioStream::update_all();
 	}
 	if (block_left != NULL) {
 		offset = offset_left;
 		if (offset > AUDIO_BLOCK_SAMPLES/2) offset = AUDIO_BLOCK_SAMPLES/2;
 		offset_left = offset + AUDIO_BLOCK_SAMPLES/2;
-		dest = (uint16_t *)&(block_left->data[offset]);
+		dest = (uint32_t *)&(block_left->data[offset]);
 		do {
 			*dest++ = *src++;
 		} while (src < end);
@@ -178,8 +178,8 @@ void AudioInputAnalogStereo::isr0(void)
 void AudioInputAnalogStereo::isr1(void)
 {
 	uint32_t daddr, offset;
-	const uint16_t *src, *end;
-	uint16_t *dest;
+	const uint32_t *src, *end;
+	uint32_t *dest;
 
 	daddr = (uint32_t)(dma1.TCD->DADDR);
 	dma1.clearInterrupt();
@@ -188,20 +188,20 @@ void AudioInputAnalogStereo::isr1(void)
 	if (daddr < (uint32_t)right_buffer + sizeof(right_buffer) / 2) {
 		// DMA is receiving to the first half of the buffer
 		// need to remove data from the second half
-		src = (uint16_t *)&right_buffer[AUDIO_BLOCK_SAMPLES/2];
-		end = (uint16_t *)&right_buffer[AUDIO_BLOCK_SAMPLES];
+		src = (uint32_t *)&right_buffer[AUDIO_BLOCK_SAMPLES/2];
+		end = (uint32_t *)&right_buffer[AUDIO_BLOCK_SAMPLES];
 		if (update_responsibility) AudioStream::update_all();
 	} else {
 		// DMA is receiving to the second half of the buffer
 		// need to remove data from the first half
-		src = (uint16_t *)&right_buffer[0];
-		end = (uint16_t *)&right_buffer[AUDIO_BLOCK_SAMPLES/2];
+		src = (uint32_t *)&right_buffer[0];
+		end = (uint32_t *)&right_buffer[AUDIO_BLOCK_SAMPLES/2];
 	}
 	if (block_right != NULL) {
 		offset = offset_right;
 		if (offset > AUDIO_BLOCK_SAMPLES/2) offset = AUDIO_BLOCK_SAMPLES/2;
 		offset_right = offset + AUDIO_BLOCK_SAMPLES/2;
-		dest = (uint16_t *)&(block_right->data[offset]);
+		dest = (uint32_t *)&(block_right->data[offset]);
 		do {
 			*dest++ = *src++;
 		} while (src < end);
@@ -215,7 +215,7 @@ void AudioInputAnalogStereo::update(void)
 	audio_block_t *new_left=NULL, *out_left=NULL;
 	audio_block_t *new_right=NULL, *out_right=NULL;
 	int32_t tmp;
-	int16_t s, *p, *end;
+	int32_t s, *p, *end;
 
 	//Serial.println("update");
 
@@ -271,7 +271,7 @@ void AudioInputAnalogStereo::update(void)
     p = out_left->data;
     end = p + AUDIO_BLOCK_SAMPLES;
     do {
-        tmp = (uint16_t)(*p);
+        tmp = (uint32_t)(*p);
         tmp = ( ((int32_t) tmp) << 14);
         int32_t acc = hpf_y1[0] - hpf_x1[0];
         acc += tmp;
@@ -285,7 +285,7 @@ void AudioInputAnalogStereo::update(void)
     p = out_right->data;
     end = p + AUDIO_BLOCK_SAMPLES;
     do {
-        tmp = (uint16_t)(*p);
+        tmp = (uint32_t)(*p);
         tmp = ( ((int32_t) tmp) << 14);
         int32_t acc = hpf_y1[1] - hpf_x1[1];
         acc += tmp;

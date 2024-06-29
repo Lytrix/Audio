@@ -33,11 +33,11 @@ audio_block_t * AudioOutputSPDIF2::block_left_1st = NULL;
 audio_block_t * AudioOutputSPDIF2::block_right_1st = NULL;
 audio_block_t * AudioOutputSPDIF2::block_left_2nd = NULL;
 audio_block_t * AudioOutputSPDIF2::block_right_2nd = NULL;
-uint16_t  AudioOutputSPDIF2::block_left_offset = 0;
-uint16_t  AudioOutputSPDIF2::block_right_offset = 0;
+uint32_t  AudioOutputSPDIF2::block_left_offset = 0;
+uint32_t  AudioOutputSPDIF2::block_right_offset = 0;
 bool AudioOutputSPDIF2::update_responsibility = false;
 DMAChannel AudioOutputSPDIF2::dma(false);
-extern uint16_t spdif_bmclookup[256];
+extern uint32_t spdif_bmclookup[256];
 
 DMAMEM __attribute__((aligned(32)))
 static uint32_t SPDIF_tx_buffer[AUDIO_BLOCK_SAMPLES * 4]; //2 KB
@@ -100,12 +100,12 @@ void AudioOutputSPDIF2::begin(void)
 
 void AudioOutputSPDIF2::isr(void)
 {
-	static uint16_t frame = 0;
-	const int16_t *src;
+	static uint32_t frame = 0;
+	const int32_t *src;
 	int32_t *end, *dest;
 	audio_block_t *block;
 	uint32_t saddr, offset;
-	uint16_t sample, lo, hi, aux;
+	uint32_t sample, lo, hi, aux;
 
 	saddr = (uint32_t)(dma.TCD->SADDR);
 	dma.clearInterrupt();
@@ -133,7 +133,7 @@ void AudioOutputSPDIF2::isr(void)
 			//Subframe Channel 1
 			hi  = spdif_bmclookup[(uint8_t)(sample >> 8)];
 			lo  = spdif_bmclookup[(uint8_t) sample];
-			lo ^= (~((int16_t)hi) >> 16);
+			lo ^= (~((int32_t)hi) >> 16);
 			// 16 Bit sample:
 			*(dest+1) = ((uint32_t)lo << 16) | hi;
 			// 4 Bit Auxillary-audio-databits, the first used as parity
@@ -185,7 +185,7 @@ void AudioOutputSPDIF2::isr(void)
 			//Subframe Channel 2
 			hi  = spdif_bmclookup[(uint8_t)(sample >> 8)];
 			lo  = spdif_bmclookup[(uint8_t)sample];
-			lo ^= (~((int16_t)hi) >> 16);
+			lo ^= (~((uint32_t)hi) >> 16);
 
 			*(dest+1) = ( ((uint32_t)lo << 16) | hi );
 

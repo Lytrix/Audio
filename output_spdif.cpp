@@ -31,11 +31,11 @@ audio_block_t * AudioOutputSPDIF::block_left_1st = NULL;
 audio_block_t * AudioOutputSPDIF::block_right_1st = NULL;
 audio_block_t * AudioOutputSPDIF::block_left_2nd = NULL;
 audio_block_t * AudioOutputSPDIF::block_right_2nd = NULL;
-uint16_t  AudioOutputSPDIF::block_left_offset = 0;
-uint16_t  AudioOutputSPDIF::block_right_offset = 0;
+uint32_t  AudioOutputSPDIF::block_left_offset = 0;
+uint32_t  AudioOutputSPDIF::block_right_offset = 0;
 bool AudioOutputSPDIF::update_responsibility = false;
 DMAChannel AudioOutputSPDIF::dma(false);
-extern uint16_t spdif_bmclookup[256];
+extern uint32_t spdif_bmclookup[256];
 DMAMEM __attribute__((aligned(32)))
 static uint32_t SPDIF_tx_buffer[AUDIO_BLOCK_SAMPLES * 4]; //2 KB
 
@@ -125,12 +125,12 @@ void AudioOutputSPDIF::begin(void)
 
 void AudioOutputSPDIF::isr(void)
 {
-	static uint16_t frame = 0;
-	const int16_t *src;
+	static uint32_t frame = 0;
+	const int32_t *src;
 	int32_t *end, *dest;
 	audio_block_t *block;
 	uint32_t saddr, offset;
-	uint16_t sample, lo, hi, aux;
+	uint32_t sample, lo, hi, aux;
 
 #if defined(KINETISK) || defined(__IMXRT1062__)
 	saddr = (uint32_t)(dma.TCD->SADDR);
@@ -161,7 +161,7 @@ void AudioOutputSPDIF::isr(void)
 			//Subframe Channel 1
 			hi  = spdif_bmclookup[(uint8_t)(sample >> 8)];
 			lo  = spdif_bmclookup[(uint8_t) sample];
-			lo ^= (~((int16_t)hi) >> 16);
+			lo ^= (~((int32_t)hi) >> 16);
 			// 16 Bit sample:
 			*(dest+1) = ((uint32_t)lo << 16) | hi;
 			// 4 Bit Auxillary-audio-databits, the first used as parity
@@ -213,7 +213,7 @@ void AudioOutputSPDIF::isr(void)
 			//Subframe Channel 2
 			hi  = spdif_bmclookup[(uint8_t)(sample >> 8)];
 			lo  = spdif_bmclookup[(uint8_t)sample];
-			lo ^= (~((int16_t)hi) >> 16);
+			lo ^= (~((int32_t)hi) >> 16);
 
 			*(dest+1) = ( ((uint32_t)lo << 16) | hi );
 

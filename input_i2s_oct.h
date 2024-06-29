@@ -49,7 +49,7 @@ private:
 	static audio_block_t *block_ch6;
 	static audio_block_t *block_ch7;
 	static audio_block_t *block_ch8;
-	static uint16_t block_offset;
+	static uint32_t block_offset;
 };
 
 

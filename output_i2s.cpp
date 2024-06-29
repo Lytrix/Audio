@@ -40,8 +40,8 @@ audio_block_t * AudioOutputI2S::block_left_1st = NULL;
 audio_block_t * AudioOutputI2S::block_right_1st = NULL;
 audio_block_t * AudioOutputI2S::block_left_2nd = NULL;
 audio_block_t * AudioOutputI2S::block_right_2nd = NULL;
-uint16_t  AudioOutputI2S::block_left_offset = 0;
-uint16_t  AudioOutputI2S::block_right_offset = 0;
+uint32_t  AudioOutputI2S::block_left_offset = 0;
+uint32_t  AudioOutputI2S::block_right_offset = 0;
 bool AudioOutputI2S::update_responsibility = false;
 DMAChannel AudioOutputI2S::dma(false);
 DMAMEM __attribute__((aligned(32))) static uint32_t i2s_tx_buffer[AUDIO_BLOCK_SAMPLES];
@@ -106,7 +106,7 @@ void AudioOutputI2S::begin(void)
 void AudioOutputI2S::isr(void)
 {
 #if defined(KINETISK) || defined(__IMXRT1062__)
-	int16_t *dest;
+	int32_t *dest;
 	audio_block_t *blockL, *blockR;
 	uint32_t saddr, offsetL, offsetR;
 
@@ -115,12 +115,12 @@ void AudioOutputI2S::isr(void)
 	if (saddr < (uint32_t)i2s_tx_buffer + sizeof(i2s_tx_buffer) / 2) {
 		// DMA is transmitting the first half of the buffer
 		// so we must fill the second half
-		dest = (int16_t *)&i2s_tx_buffer[AUDIO_BLOCK_SAMPLES/2];
+		dest = (int32_t *)&i2s_tx_buffer[AUDIO_BLOCK_SAMPLES/2];
 		if (AudioOutputI2S::update_responsibility) AudioStream::update_all();
 	} else {
 		// DMA is transmitting the second half of the buffer
 		// so we must fill the first half
-		dest = (int16_t *)i2s_tx_buffer;
+		dest = (int32_t *)i2s_tx_buffer;
 	}
 
 	blockL = AudioOutputI2S::block_left_1st;
@@ -161,8 +161,8 @@ void AudioOutputI2S::isr(void)
 		AudioOutputI2S::block_right_2nd = NULL;
 	}
 #else
-	const int16_t *src, *end;
-	int16_t *dest;
+	const int32_t *src, *end;
+	int32_t *dest;
 	audio_block_t *block;
 	uint32_t saddr, offset;
 
@@ -171,14 +171,14 @@ void AudioOutputI2S::isr(void)
 	if (saddr < (uint32_t)i2s_tx_buffer + sizeof(i2s_tx_buffer) / 2) {
 		// DMA is transmitting the first half of the buffer
 		// so we must fill the second half
-		dest = (int16_t *)&i2s_tx_buffer[AUDIO_BLOCK_SAMPLES/2];
-		end = (int16_t *)&i2s_tx_buffer[AUDIO_BLOCK_SAMPLES];
+		dest = (int32_t *)&i2s_tx_buffer[AUDIO_BLOCK_SAMPLES/2];
+		end = (int32_t *)&i2s_tx_buffer[AUDIO_BLOCK_SAMPLES];
 		if (AudioOutputI2S::update_responsibility) AudioStream::update_all();
 	} else {
 		// DMA is transmitting the second half of the buffer
 		// so we must fill the first half
-		dest = (int16_t *)i2s_tx_buffer;
-		end = (int16_t *)&i2s_tx_buffer[AUDIO_BLOCK_SAMPLES/2];
+		dest = (int32_t *)i2s_tx_buffer;
+		end = (int32_t *)&i2s_tx_buffer[AUDIO_BLOCK_SAMPLES/2];
 	}
 
 	block = AudioOutputI2S::block_left_1st;
@@ -610,8 +610,8 @@ bool AudioOutputI2S::update_responsibility = false;
 
 #define NUM_SAMPLES (AUDIO_BLOCK_SAMPLES / 2)
 
-DMAMEM static int16_t i2s_tx_buffer1[NUM_SAMPLES * 2];
-DMAMEM static int16_t i2s_tx_buffer2[NUM_SAMPLES * 2];
+DMAMEM static int32_t i2s_tx_buffer1[NUM_SAMPLES * 2];
+DMAMEM static int32_t i2s_tx_buffer2[NUM_SAMPLES * 2];
 DMAChannel AudioOutputI2S::dma1(false);
 DMAChannel AudioOutputI2S::dma2(false);
 
@@ -689,15 +689,15 @@ void AudioOutputI2S::update(void)
 }
 
 inline __attribute__((always_inline, hot))
-static void interleave(const int16_t *dest,const audio_block_t *block_left, const audio_block_t *block_right, const size_t offset)
+static void interleave(const int32_t *dest,const audio_block_t *block_left, const audio_block_t *block_right, const size_t offset)
 {
 //return;
 	uint32_t *p = (uint32_t*)dest;
 	uint32_t *end = p + NUM_SAMPLES;
 
 	if (block_left != nullptr && block_right != nullptr) {
-		uint16_t *l = (uint16_t*)&block_left->data[offset];
-		uint16_t *r = (uint16_t*)&block_right->data[offset];
+		uint32_t *l = (uint32_t*)&block_left->data[offset];
+		uint32_t *r = (uint32_t*)&block_right->data[offset];
 		do {
 			*p++ = (((uint32_t)(*l++)) << 16)  | (uint32_t)(*r++);
 			*p++ = (((uint32_t)(*l++)) << 16)  | (uint32_t)(*r++);
@@ -708,7 +708,7 @@ static void interleave(const int16_t *dest,const audio_block_t *block_left, cons
 	}
 
 	if (block_left != nullptr) {
-		uint16_t *l = (uint16_t*)&block_left->data[offset];
+		uint32_t *l = (uint32_t*)&block_left->data[offset];
 		do {
 			*p++ = (uint32_t)(*l++) << 16;
 			*p++ = (uint32_t)(*l++) << 16;
@@ -719,7 +719,7 @@ static void interleave(const int16_t *dest,const audio_block_t *block_left, cons
 	}
 
 	if (block_right != nullptr) {
-		uint16_t *r = (uint16_t*)&block_right->data[offset];
+		uint32_t *r = (uint32_t*)&block_right->data[offset];
 		do {
 			*p++ =(uint32_t)(*r++);
 			*p++ =(uint32_t)(*r++);

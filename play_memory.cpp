@@ -55,9 +55,9 @@ void AudioPlayMemory::update(void)
 {
 	audio_block_t *block;
 	const unsigned int *in;
-	int16_t *out;
+	int32_t *out;
 	uint32_t tmp32, consumed;
-	int16_t s0, s1, s2, s3, s4;
+	int32_t s0, s1, s2, s3, s4;
 	int i;
 
 	if (!playing) return;
@@ -85,8 +85,8 @@ void AudioPlayMemory::update(void)
 	  case 0x81: // 16 bit PCM, 44100 Hz
 		for (i=0; i < AUDIO_BLOCK_SAMPLES; i += 2) {
 			tmp32 = *in++;
-			*out++ = (int16_t)(tmp32 & 65535);
-			*out++ = (int16_t)(tmp32 >> 16);
+			*out++ = (uint32_t)(tmp32 & 65535);
+			*out++ = (uint32_t)(tmp32 >> 16);
 		}
 		consumed = AUDIO_BLOCK_SAMPLES;
 		break;

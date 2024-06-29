@@ -39,9 +39,9 @@
 void AudioSynthWaveform::update(void)
 {
 	audio_block_t *block;
-	int16_t *bp, *end;
+	int32_t *bp, *end;
 	int32_t val1, val2;
-	int16_t magnitude15;
+	int32_t magnitude15;
 	uint32_t i, ph, index, index2, scale;
 	const uint32_t inc = phase_increment;
 
@@ -108,7 +108,7 @@ void AudioSynthWaveform::update(void)
 		for (int i = 0 ; i < AUDIO_BLOCK_SAMPLES ; i++)
 		{
 		  uint32_t new_ph = ph + inc ;
-		  int16_t val = band_limit_waveform.generate_square (new_ph, i) ;
+		  int32_t val = band_limit_waveform.generate_square (new_ph, i) ;
 		  *bp++ = (val * magnitude) >> 16 ;
 		  ph = new_ph ;
 		}
@@ -133,7 +133,7 @@ void AudioSynthWaveform::update(void)
 		for (i = 0 ; i < AUDIO_BLOCK_SAMPLES; i++)
 		{
 		  uint32_t new_ph = ph + inc ;
-		  int16_t val = band_limit_waveform.generate_sawtooth (new_ph, i) ;
+		  int32_t val = band_limit_waveform.generate_sawtooth (new_ph, i) ;
 		  if (tone_type == WAVEFORM_BANDLIMIT_SAWTOOTH_REVERSE)
 		    *bp++ = (val * -magnitude) >> 16 ;
 		  else
@@ -226,9 +226,9 @@ void AudioSynthWaveform::update(void)
 void AudioSynthWaveformModulated::update(void)
 {
 	audio_block_t *block, *moddata, *shapedata;
-	int16_t *bp, *end;
+	int32_t *bp, *end;
 	int32_t val1, val2;
-	int16_t magnitude15;
+	int32_t magnitude15;
 	uint32_t i, ph, index, index2, scale, priorphase;
 	const uint32_t inc = phase_increment;
 
@@ -374,7 +374,7 @@ void AudioSynthWaveformModulated::update(void)
 		  {
 		    uint32_t width = ((shapedata->data[i] + 0x8000) & 0xFFFF) << 16;
 		    int32_t val = band_limit_waveform.generate_pulse (phasedata[i], width, i) ;
-		    *bp++ = (int16_t) ((val * magnitude) >> 16) ;
+		    *bp++ = (int32_t) ((val * magnitude) >> 16) ;
 		  }
 		  break;
 		} // else fall through to orginary square without shape modulation
@@ -383,7 +383,7 @@ void AudioSynthWaveformModulated::update(void)
 		for (i = 0 ; i < AUDIO_BLOCK_SAMPLES ; i++)
 		{
 		  int32_t val = band_limit_waveform.generate_square (phasedata[i], i) ;
-		  *bp++ = (int16_t) ((val * magnitude) >> 16) ;
+		  *bp++ = (int32_t) ((val * magnitude) >> 16) ;
 		}
 		break;
 
@@ -403,9 +403,9 @@ void AudioSynthWaveformModulated::update(void)
 	case WAVEFORM_BANDLIMIT_SAWTOOTH_REVERSE:
 		for (i = 0 ; i < AUDIO_BLOCK_SAMPLES ; i++)
 		{
-		  int16_t val = band_limit_waveform.generate_sawtooth (phasedata[i], i) ;
-		  val = (int16_t) ((val * magnitude) >> 16) ;
-		  *bp++ = tone_type == WAVEFORM_BANDLIMIT_SAWTOOTH_REVERSE ? (int16_t) -val : (int16_t) +val ;
+		  int32_t val = band_limit_waveform.generate_sawtooth (phasedata[i], i) ;
+		  val = (int32_t) ((val * magnitude) >> 16) ;
+		  *bp++ = tone_type == WAVEFORM_BANDLIMIT_SAWTOOTH_REVERSE ? (int32_t) -val : (int32_t) +val ;
 		}
 		break;
 
@@ -580,7 +580,7 @@ int32_t BandLimitedWaveform::process_active_steps_saw (uint32_t new_phase)
 {
   int32_t sample = process_active_steps (new_phase) ;
 
-  sample += (int16_t) ((((uint64_t)phase_word * (2*BASE_AMPLITUDE)) >> 32) - BASE_AMPLITUDE) ;  // generate the sloped part of the wave
+  sample += (int32_t) ((((uint64_t)phase_word * (2*BASE_AMPLITUDE)) >> 32) - BASE_AMPLITUDE) ;  // generate the sloped part of the wave
 
   if (new_phase < DEG180 && phase_word >= DEG180) // detect wrap around, correct dc offset
     dc_offset += 2*BASE_AMPLITUDE ;
@@ -675,34 +675,34 @@ void BandLimitedWaveform::new_step_check_saw (uint32_t new_phase, int i)
 // the generation function pushd new sample into cyclic buffer, having taken out the oldest entry
 // to return.  The output is thus 16 samples behind, which allows the non-casual step function to
 // work in real time.
-int16_t BandLimitedWaveform::generate_sawtooth (uint32_t new_phase, int i)
+int32_t BandLimitedWaveform::generate_sawtooth (uint32_t new_phase, int i)
 {
   new_step_check_saw (new_phase, i) ;
   int32_t val = process_active_steps_saw (new_phase) ;
-  int16_t sample = (int16_t) cyclic [i&15] ;
+  int32_t sample = (int32_t) cyclic [i&15] ;
   cyclic [i&15] = val ;
   phase_word = new_phase ;
   return sample ;
 }
 
-int16_t BandLimitedWaveform::generate_square (uint32_t new_phase, int i)
+int32_t BandLimitedWaveform::generate_square (uint32_t new_phase, int i)
 {
   new_step_check_square (new_phase, i) ;
   int32_t val = process_active_steps (new_phase) ;
-  int16_t sample = (int16_t) cyclic [i&15] ;
+  int32_t sample = (int32_t) cyclic [i&15] ;
   cyclic [i&15] = val ;
   phase_word = new_phase ;
   return sample ;
 }
 
-int16_t BandLimitedWaveform::generate_pulse (uint32_t new_phase, uint32_t pulse_width, int i)
+int32_t BandLimitedWaveform::generate_pulse (uint32_t new_phase, uint32_t pulse_width, int i)
 {
   new_step_check_pulse (new_phase, pulse_width, i) ;
   int32_t val = process_active_steps_pulse (new_phase, pulse_width) ;
   int32_t sample = cyclic [i&15] ;
   cyclic [i&15] = val ;
   phase_word = new_phase ;
-  return (int16_t) ((sample >> 1) - (sample >> 5)) ; // scale down to avoid overflow on narrow pulses, where the DC shift is big
+  return (int32_t) ((sample >> 1) - (sample >> 5)) ; // scale down to avoid overflow on narrow pulses, where the DC shift is big
 }
 
 void BandLimitedWaveform::init_sawtooth (uint32_t freq_word)
@@ -717,7 +717,7 @@ void BandLimitedWaveform::init_sawtooth (uint32_t freq_word)
   {
     uint32_t new_phase = phase_word + freq_word ;
     new_step_check_saw (new_phase, i) ;
-    cyclic [i & 15] = (int16_t) process_active_steps_saw (new_phase) ;
+    cyclic [i & 15] = (int32_t) process_active_steps_saw (new_phase) ;
     phase_word = new_phase ;
   }
 }
@@ -752,7 +752,7 @@ void BandLimitedWaveform::init_pulse (uint32_t freq_word, uint32_t pulse_width)
   {
     uint32_t new_phase = phase_word + freq_word ;
     new_step_check_pulse (new_phase, pulse_width, i) ;
-    cyclic [i & 15] = (int16_t) process_active_steps_pulse (new_phase, pulse_width) ;
+    cyclic [i & 15] = (int32_t) process_active_steps_pulse (new_phase, pulse_width) ;
     phase_word = new_phase ;
   }
 }

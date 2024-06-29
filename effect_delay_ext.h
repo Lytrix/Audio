@@ -70,8 +70,8 @@ public:
 	virtual void update(void);
 private:
 	void initialize(AudioEffectDelayMemoryType_t type, uint32_t samples);
-	void read(uint32_t address, uint32_t count, int16_t *data);
-	void write(uint32_t address, uint32_t count, const int16_t *data);
+	void read(uint32_t address, uint32_t count, int32_t *data);
+	void write(uint32_t address, uint32_t count, const int32_t *data);
 	void zero(uint32_t address, uint32_t count) {
 		write(address, count, NULL);
 	}

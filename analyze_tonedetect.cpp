@@ -42,7 +42,7 @@ void AudioAnalyzeToneDetect::update(void)
 {
 	audio_block_t *block;
 	int32_t q0, q1, q2, coef;
-	const int16_t *p, *end;
+	const int32_t *p, *end;
 	uint16_t n;
 
 	block = receiveReadOnly();

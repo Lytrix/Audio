@@ -55,7 +55,7 @@ bool AudioPlayQueue::available(void)
  * API by returning NULL if no audio block is available.
  * \return: NULL if buffer not available, else pointer to buffer of AUDIO_BLOCK_SAMPLES of int16_t
  */
-int16_t* AudioPlayQueue::getBuffer(void)
+int32_t* AudioPlayQueue::getBuffer(void)
 {
 	if (NULL == userblock) // not got one: try to get one
 	{
@@ -130,10 +130,10 @@ uint32_t AudioPlayQueue::playBuffer(void)
  * Put sample to buffer, and queue if buffer full.
  * \return 0: success; 1: failed, data not stored, call again with same data
  */
-uint32_t AudioPlayQueue::play(int16_t data)
+uint32_t AudioPlayQueue::play(int32_t data)
 {
 	uint32_t result = 1;
-	int16_t* buf = getBuffer();
+	int32_t* buf = getBuffer();
 	
 	do
 	{		
@@ -166,10 +166,10 @@ uint32_t AudioPlayQueue::play(int16_t data)
  * Put multiple samples to buffer(s), and queue if buffer(s) full.
  * \return 0: success; >0: failed, data not stored, call again with remaining data (return is unused data length)
  */
-uint32_t AudioPlayQueue::play(const int16_t *data, uint32_t len)
+uint32_t AudioPlayQueue::play(const int32_t *data, uint32_t len)
 {
 	uint32_t result = len;
-	int16_t * buf = getBuffer();
+	int32_t * buf = getBuffer();
 	
 	do
 	{
@@ -193,7 +193,7 @@ uint32_t AudioPlayQueue::play(const int16_t *data, uint32_t len)
 			break;
 			
 		// we have a buffer and something to copy to it: do that
-		memcpy ((void*)(buf+uptr), (void*)data, to_copy * sizeof(int16_t)) ;
+		memcpy ((void*)(buf+uptr), (void*)data, to_copy * sizeof(int32_t)) ;
 		uptr   += to_copy;
 		data   += to_copy;
 		len    -= to_copy;

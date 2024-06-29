@@ -34,7 +34,7 @@ audio_block_t * AudioInputI2SQuad::block_ch1 = NULL;
 audio_block_t * AudioInputI2SQuad::block_ch2 = NULL;
 audio_block_t * AudioInputI2SQuad::block_ch3 = NULL;
 audio_block_t * AudioInputI2SQuad::block_ch4 = NULL;
-uint16_t AudioInputI2SQuad::block_offset = 0;
+uint32_t AudioInputI2SQuad::block_offset = 0;
 bool AudioInputI2SQuad::update_responsibility = false;
 DMAChannel AudioInputI2SQuad::dma(false);
 
@@ -128,8 +128,8 @@ void AudioInputI2SQuad::begin(void)
 void AudioInputI2SQuad::isr(void)
 {
 	uint32_t daddr, offset;
-	const int16_t *src;
-	int16_t *dest1, *dest2, *dest3, *dest4;
+	const int32_t *src;
+	int32_t *dest1, *dest2, *dest3, *dest4;
 
 	//digitalWriteFast(3, HIGH);
 	daddr = (uint32_t)(dma.TCD->DADDR);
@@ -138,12 +138,12 @@ void AudioInputI2SQuad::isr(void)
 	if (daddr < (uint32_t)i2s_rx_buffer + sizeof(i2s_rx_buffer) / 2) {
 		// DMA is receiving to the first half of the buffer
 		// need to remove data from the second half
-		src = (int16_t *)&i2s_rx_buffer[AUDIO_BLOCK_SAMPLES];
+		src = (int32_t *)&i2s_rx_buffer[AUDIO_BLOCK_SAMPLES];
 		if (update_responsibility) update_all();
 	} else {
 		// DMA is receiving to the second half of the buffer
 		// need to remove data from the first half
-		src = (int16_t *)&i2s_rx_buffer[0];
+		src = (int32_t *)&i2s_rx_buffer[0];
 	}
 	if (block_ch1) {
 		offset = block_offset;

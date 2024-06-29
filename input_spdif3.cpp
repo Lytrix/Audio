@@ -37,7 +37,7 @@ DMAMEM __attribute__((aligned(32)))
 static uint32_t spdif_rx_buffer[AUDIO_BLOCK_SAMPLES * 4];
 audio_block_t * AudioInputSPDIF3::block_left = NULL;
 audio_block_t * AudioInputSPDIF3::block_right = NULL;
-uint16_t AudioInputSPDIF3::block_offset = 0;
+uint32_t AudioInputSPDIF3::block_offset = 0;
 bool AudioInputSPDIF3::update_responsibility = false;
 DMAChannel AudioInputSPDIF3::dma(false);
 
@@ -78,7 +78,7 @@ void AudioInputSPDIF3::isr(void)
 {
 	uint32_t daddr, offset;
 	const int32_t *src, *end;
-	int16_t *dest_left, *dest_right;
+	int32_t *dest_left, *dest_right;
 	audio_block_t *left, *right;
 
 	dma.clearInterrupt();

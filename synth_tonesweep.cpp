@@ -87,7 +87,7 @@ unsigned char AudioSynthToneSweep::isPlaying(void)
 void AudioSynthToneSweep::update(void)
 {
   audio_block_t *block;
-  short *bp;
+  int32_t *bp;
   int i;
   
   if(!sweep_busy)return;

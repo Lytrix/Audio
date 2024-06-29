@@ -30,7 +30,7 @@
 void AudioAnalyzePeak::update(void)
 {
 	audio_block_t *block;
-	const int16_t *p, *end;
+	const int32_t *p, *end;
 	int32_t min, max;
 
 	block = receiveReadOnly();

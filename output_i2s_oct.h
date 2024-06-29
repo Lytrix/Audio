@@ -57,14 +57,14 @@ private:
 	static audio_block_t *block_ch6_2nd;
 	static audio_block_t *block_ch7_2nd;
 	static audio_block_t *block_ch8_2nd;
-	static uint16_t ch1_offset;
-	static uint16_t ch2_offset;
-	static uint16_t ch3_offset;
-	static uint16_t ch4_offset;
-	static uint16_t ch5_offset;
-	static uint16_t ch6_offset;
-	static uint16_t ch7_offset;
-	static uint16_t ch8_offset;
+	static uint32_t ch1_offset;
+	static uint32_t ch2_offset;
+	static uint32_t ch3_offset;
+	static uint32_t ch4_offset;
+	static uint32_t ch5_offset;
+	static uint32_t ch6_offset;
+	static uint32_t ch7_offset;
+	static uint32_t ch8_offset;
 	audio_block_t *inputQueueArray[8];
 };
 

@@ -48,10 +48,10 @@
 
 #if defined(__ARM_ARCH_7EM__)
 
-void AudioFilterStateVariable::update_fixed(const int16_t *in,
-	int16_t *lp, int16_t *bp, int16_t *hp)
+void AudioFilterStateVariable::update_fixed(const int32_t *in,
+	int32_t *lp, int32_t *bp, int32_t *hp)
 {
-	const int16_t *end = in + AUDIO_BLOCK_SAMPLES;
+	const int32_t *end = in + AUDIO_BLOCK_SAMPLES;
 	int32_t input, inputprev;
 	int32_t lowpass, bandpass, highpass;
 	int32_t lowpasstmp, bandpasstmp, highpasstmp;
@@ -87,10 +87,10 @@ void AudioFilterStateVariable::update_fixed(const int16_t *in,
 }
 
 
-void AudioFilterStateVariable::update_variable(const int16_t *in,
-	const int16_t *ctl, int16_t *lp, int16_t *bp, int16_t *hp)
+void AudioFilterStateVariable::update_variable(const int32_t *in,
+	const int32_t *ctl, int32_t *lp, int32_t *bp, int32_t *hp)
 {
-	const int16_t *end = in + AUDIO_BLOCK_SAMPLES;
+	const int32_t *end = in + AUDIO_BLOCK_SAMPLES;
 	int32_t input, inputprev, control;
 	int32_t lowpass, bandpass, highpass;
 	int32_t lowpasstmp, bandpasstmp, highpasstmp;

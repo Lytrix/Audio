@@ -169,15 +169,15 @@ void AudioInputPDM2::isr(void)
 		// TODO: should find a way to pass the unfiltered data to
 		// the lower priority update.  This burns ~40% of the CPU
 		// time in a high priority interrupt.  Not ideal.  :(
-		int16_t *dest = left->data;
+		int32_t *dest = left->data;
 		arm_dcache_delete ((void*) src, sizeof (pdm_buffer) >> 1);
-		for (unsigned int i=0; i < 14; i += 2) {
+		for (int i=0; i < 14; i += 2) {
 			*dest++ = pdm_filter(leftover + i, 7 - (i >> 1), src);
 		}
-		for (unsigned int i=0; i < AUDIO_BLOCK_SAMPLES*2-14; i += 2) {
+		for (int i=0; i < AUDIO_BLOCK_SAMPLES*2-14; i += 2) {
 			*dest++ = pdm_filter(src + i);
 		}
-		for (unsigned int i=0; i < 14; i++) {
+		for (int i=0; i < 14; i++) {
 			leftover[i] = src[AUDIO_BLOCK_SAMPLES*2 - 14 + i];
 		}
 		//left->data[0] = 0x7FFF;

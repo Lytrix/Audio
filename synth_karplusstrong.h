@@ -56,11 +56,11 @@ public:
 	virtual void update(void);
 private:
 	uint8_t  state;     // 0=steady output, 1=begin on next update, 2=playing
-	uint16_t bufferLen;
-	uint16_t bufferIndex;
+	uint32_t bufferLen;
+	uint32_t bufferIndex;
 	int32_t  magnitude; // current output
 	static uint32_t seed;  // must start at 1
-	int16_t buffer[536]; // TODO: dynamically use audio memory blocks
+	int32_t buffer[536]; // TODO: dynamically use audio memory blocks
 };
 
 #endif

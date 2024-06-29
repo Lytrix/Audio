@@ -48,14 +48,14 @@ audio_block_t * AudioOutputI2SOct::block_ch5_2nd = NULL;
 audio_block_t * AudioOutputI2SOct::block_ch6_2nd = NULL;
 audio_block_t * AudioOutputI2SOct::block_ch7_2nd = NULL;
 audio_block_t * AudioOutputI2SOct::block_ch8_2nd = NULL;
-uint16_t  AudioOutputI2SOct::ch1_offset = 0;
-uint16_t  AudioOutputI2SOct::ch2_offset = 0;
-uint16_t  AudioOutputI2SOct::ch3_offset = 0;
-uint16_t  AudioOutputI2SOct::ch4_offset = 0;
-uint16_t  AudioOutputI2SOct::ch5_offset = 0;
-uint16_t  AudioOutputI2SOct::ch6_offset = 0;
-uint16_t  AudioOutputI2SOct::ch7_offset = 0;
-uint16_t  AudioOutputI2SOct::ch8_offset = 0;
+uint32_t  AudioOutputI2SOct::ch1_offset = 0;
+uint32_t  AudioOutputI2SOct::ch2_offset = 0;
+uint32_t  AudioOutputI2SOct::ch3_offset = 0;
+uint32_t  AudioOutputI2SOct::ch4_offset = 0;
+uint32_t  AudioOutputI2SOct::ch5_offset = 0;
+uint32_t  AudioOutputI2SOct::ch6_offset = 0;
+uint32_t  AudioOutputI2SOct::ch7_offset = 0;
+uint32_t  AudioOutputI2SOct::ch8_offset = 0;
 bool AudioOutputI2SOct::update_responsibility = false;
 DMAMEM __attribute__((aligned(32))) static uint32_t i2s_tx_buffer[AUDIO_BLOCK_SAMPLES*4];
 DMAChannel AudioOutputI2SOct::dma(false);
@@ -105,19 +105,19 @@ void AudioOutputI2SOct::begin(void)
 void AudioOutputI2SOct::isr(void)
 {
 	uint32_t saddr;
-	const int16_t *src1, *src2, *src3, *src4, *src5, *src6, *src7, *src8;
-	const int16_t *zeros = (const int16_t *)zerodata;
-	int16_t *dest;
+	const int32_t *src1, *src2, *src3, *src4, *src5, *src6, *src7, *src8;
+	const int32_t *zeros = (const int32_t *)zerodata;
+	int32_t *dest;
 
 	saddr = (uint32_t)(dma.TCD->SADDR);
 	dma.clearInterrupt();
 	if (saddr < (uint32_t)i2s_tx_buffer + sizeof(i2s_tx_buffer) / 2) {
 		// DMA is transmitting the first half of the buffer
 		// so we must fill the second half
-		dest = (int16_t *)((uint32_t)i2s_tx_buffer + sizeof(i2s_tx_buffer) / 2);
+		dest = (int32_t *)((uint32_t)i2s_tx_buffer + sizeof(i2s_tx_buffer) / 2);
 		if (update_responsibility) update_all();
 	} else {
-		dest = (int16_t *)i2s_tx_buffer;
+		dest = (int32_t *)i2s_tx_buffer;
 	}
 
 	src1 = (block_ch1_1st) ? block_ch1_1st->data + ch1_offset : zeros;
@@ -132,7 +132,7 @@ void AudioOutputI2SOct::isr(void)
 	// TODO: optimized 8 channel copy...
 	memcpy_tointerleaveQuad(dest, src1, src2, src3, src4);
 #else
-	int16_t *p=dest;
+	int32_t *p=dest;
 	for (int i=0; i < AUDIO_BLOCK_SAMPLES/2; i++) {
 		*p++ = *src1++;
 		*p++ = *src3++;

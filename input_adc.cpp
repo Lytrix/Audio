@@ -34,9 +34,9 @@
 
 #define COEF_HPF_DCBLOCK    (1048300<<10)  // DC Removal filter coefficient in S1.30
 
-DMAMEM __attribute__((aligned(32))) static uint16_t analog_rx_buffer[AUDIO_BLOCK_SAMPLES];
+DMAMEM __attribute__((aligned(32))) static uint32_t analog_rx_buffer[AUDIO_BLOCK_SAMPLES];
 audio_block_t * AudioInputAnalog::block_left = NULL;
-uint16_t AudioInputAnalog::block_offset = 0;
+uint32_t AudioInputAnalog::block_offset = 0;
 int32_t AudioInputAnalog::hpf_y1 = 0;
 int32_t AudioInputAnalog::hpf_x1 = 0;
 
@@ -60,7 +60,7 @@ void AudioInputAnalog::init(uint8_t pin)
 	// Note for review:
 	// Probably not useful to spin cycles here stabilizing
 	// since DC blocking is similar to te external analog filters
-	tmp = (uint16_t) analogRead(pin);
+	tmp = (uint32_t) analogRead(pin);
 	tmp = ( ((int32_t) tmp) << 14);
 	hpf_x1 = tmp;   // With constant DC level x1 would be x0
 	hpf_y1 = 0;     // Output will settle here when stable
@@ -104,8 +104,8 @@ void AudioInputAnalog::init(uint8_t pin)
 void AudioInputAnalog::isr(void)
 {
 	uint32_t daddr, offset;
-	const uint16_t *src, *end;
-	uint16_t *dest_left;
+	const uint32_t *src, *end;
+	uint32_t *dest_left;
 	audio_block_t *left;
 
 	daddr = (uint32_t)(dma.TCD->DADDR);
@@ -114,20 +114,20 @@ void AudioInputAnalog::isr(void)
 	if (daddr < (uint32_t)analog_rx_buffer + sizeof(analog_rx_buffer) / 2) {
 		// DMA is receiving to the first half of the buffer
 		// need to remove data from the second half
-		src = (uint16_t *)&analog_rx_buffer[AUDIO_BLOCK_SAMPLES/2];
-		end = (uint16_t *)&analog_rx_buffer[AUDIO_BLOCK_SAMPLES];
+		src = (uint32_t *)&analog_rx_buffer[AUDIO_BLOCK_SAMPLES/2];
+		end = (uint32_t *)&analog_rx_buffer[AUDIO_BLOCK_SAMPLES];
 		if (update_responsibility) AudioStream::update_all();
 	} else {
 		// DMA is receiving to the second half of the buffer
 		// need to remove data from the first half
-		src = (uint16_t *)&analog_rx_buffer[0];
-		end = (uint16_t *)&analog_rx_buffer[AUDIO_BLOCK_SAMPLES/2];
+		src = (uint32_t *)&analog_rx_buffer[0];
+		end = (uint32_t *)&analog_rx_buffer[AUDIO_BLOCK_SAMPLES/2];
 	}
 	left = block_left;
 	if (left != NULL) {
 		offset = block_offset;
 		if (offset > AUDIO_BLOCK_SAMPLES/2) offset = AUDIO_BLOCK_SAMPLES/2;
-		dest_left = (uint16_t *)&(left->data[offset]);
+		dest_left = (uint32_t *)&(left->data[offset]);
 		block_offset = offset + AUDIO_BLOCK_SAMPLES/2;
 		do {
 			*dest_left++ = *src++;
@@ -140,7 +140,7 @@ void AudioInputAnalog::update(void)
 	audio_block_t *new_left=NULL, *out_left=NULL;
 	uint32_t offset;
 	int32_t tmp;
-	int16_t s, *p, *end;
+	int32_t s, *p, *end;
 
 	//Serial.println("update");
 
@@ -194,7 +194,7 @@ void AudioInputAnalog::update(void)
 	p = out_left->data;
 	end = p + AUDIO_BLOCK_SAMPLES;
 	do {
-		tmp = (uint16_t)(*p);
+		tmp = (uint32_t)(*p);
         tmp = ( ((int32_t) tmp) << 14);
         int32_t acc = hpf_y1 - hpf_x1;
         acc += tmp;
@@ -224,7 +224,7 @@ extern "C" void xbar_connect(unsigned int input, unsigned int output);
 DMAChannel AudioInputAnalog::dma(false);
 // need at least FILTERLEN extra samples, but add a safety margin so the DMA won't
 // overwrite the oldest samples if we have some latency before calling update()
-static __attribute__((aligned(32))) uint16_t adc_buffer[AUDIO_BLOCK_SAMPLES*4+200];
+static __attribute__((aligned(32))) uint32_t adc_buffer[AUDIO_BLOCK_SAMPLES*4+200];
 
 PROGMEM static const uint8_t adc2_pin_to_channel[] = {
 	7,      // 0/A0  AD_B1_02
@@ -275,7 +275,7 @@ PROGMEM static const uint8_t adc2_pin_to_channel[] = {
 
 
 // http://t-filter.engineerjs.com/  (use 176400 sample freq, int 18 bit output)
-static const int16_t filter[] = {
+static const int32_t filter[] = {
 #if 1
 33, 125, 299, 591, 979, 1420, 1798, 1971, 1784, 1136, 26, -1391, -2811,
 -3802, -3906, -2743, -142, 3778, 8586, 13593, 17981, 20983, 22050, 20983,
@@ -295,7 +295,7 @@ static const int16_t filter[] = {
 
 #define FILTERLEN (sizeof(filter)/2)
 
-static int16_t capture_buffer[AUDIO_BLOCK_SAMPLES*4+FILTERLEN];
+static int32_t capture_buffer[AUDIO_BLOCK_SAMPLES*4+FILTERLEN];
 
 void AudioInputAnalog::init(uint8_t pin)
 {
@@ -380,9 +380,9 @@ void AudioInputAnalog::init(uint8_t pin)
 	// TODO: configure I2S1 to interrupt every 128 audio samples, run 1st half of update
 }
 
-static int16_t fir(const int16_t *data, const int16_t *impulse, int len)
+static int32_t fir(const int32_t *data, const uint32_t *impulse, int len)
 {
-	int64_t sum=0;
+	int32_t sum=0;
 
 	while (len > 0) {
 		sum += *data++ * *impulse++; // TODO: optimize with DSP inst and filter symmetry
@@ -410,8 +410,8 @@ void AudioInputAnalog::update(void)
 	if (output == NULL) return;
 
 	const int adc_buffer_len = sizeof(adc_buffer)/2;
-	static uint16_t *prior_p = adc_buffer;
-	uint16_t *p = (uint16_t *)dma.TCD->DADDR;
+	static uint32_t *prior_p = adc_buffer;
+	uint32_t *p = (uint32_t *)dma.TCD->DADDR;
 	// TODO: check if DADDR points to most recently written (as used here)
 	// or if DADDR really points to next place to write, and we would need to
 	// back up 1 location to avoid reusing stale oldest data
@@ -474,8 +474,8 @@ void AudioInputAnalog::update(void)
 	}
 
 	// Remove DC offset from newly added samples
-	int16_t *s = capture_buffer + recycle_samples;
-	const int16_t *end = capture_buffer + capture_buffer_len;
+	int32_t *s = capture_buffer + recycle_samples;
+	const int32_t *end = capture_buffer + capture_buffer_len;
 	while (s < end) {
 		//if (*s > capture_max) capture_max = *s;
 		//if (*s < capture_min) capture_min = *s;
@@ -488,8 +488,8 @@ void AudioInputAnalog::update(void)
 #endif
 #if 0
 		// https://forum.pjrc.com/threads/69542
-		#define pole ((int16_t)32767*0.995)
-		#define Q15Mul(a,b) ((int16_t)((int32_t)a*b)>>15)
+		#define pole ((int32_t)32767*0.995)
+		#define Q15Mul(a,b) ((int32_t)((int32_t)a*b)>>15)
 		static int xm1=0, ym1=0;
 		ym1 = *s - xm1 + Q15Mul(pole,ym1);
 		xm1 = *s;
@@ -512,7 +512,7 @@ void AudioInputAnalog::update(void)
 	}
 
 	// Low pass filter and subsample
-	int16_t *dest = output->data;
+	int32_t *dest = output->data;
 	for (int i=0; i < AUDIO_BLOCK_SAMPLES; i++) {
 #if 1
 		// proper low-pass filter sounds pretty good

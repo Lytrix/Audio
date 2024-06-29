@@ -54,7 +54,7 @@ private:
 	static audio_block_t *block_left;
 	static audio_block_t *block_right;
 #if !defined(KINETISL)	
-	static uint16_t block_offset;
+	static uint32_t block_offset;
 #endif	
 };
 

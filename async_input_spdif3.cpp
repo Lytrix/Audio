@@ -37,7 +37,7 @@
 namespace {
 	#define SPDIF_RX_BUFFER_LENGTH AUDIO_BLOCK_SAMPLES
 	const int32_t bufferLength=8*AUDIO_BLOCK_SAMPLES;
-	const uint16_t noSamplerPerIsr=SPDIF_RX_BUFFER_LENGTH/4;
+	const uint32_t noSamplerPerIsr=SPDIF_RX_BUFFER_LENGTH/4;
 	const float toFloatAudio= (float)(1./pow(2., 23.));
 }
 
@@ -119,7 +119,7 @@ bool AsyncAudioInputSPDIF3::isLocked() {
 	return (SPDIF_SRPC & SPDIF_SRPC_LOCK) == SPDIF_SRPC_LOCK;
 }
 
-void AsyncAudioInputSPDIF3::resample(int16_t* data_left, int16_t* data_right, int32_t& block_offset){
+void AsyncAudioInputSPDIF3::resample(int32_t* data_left, int32_t* data_right, int32_t& block_offset){
 	block_offset=0;
 	if(!_resampler.initialized() || !isLocked()){
 		return;
@@ -341,10 +341,10 @@ void AsyncAudioInputSPDIF3::update(void)
 	}
 	if (block_left && block_right) {
 		int32_t block_offset;
-		resample(block_left->data, block_right->data,block_offset);
+		resample(block_left->data, block_right->data, block_offset);
 		if(block_offset < AUDIO_BLOCK_SAMPLES){
-			memset(block_left->data+block_offset, 0, (AUDIO_BLOCK_SAMPLES-block_offset)*sizeof(int16_t)); 
-			memset(block_right->data+block_offset, 0, (AUDIO_BLOCK_SAMPLES-block_offset)*sizeof(int16_t)); 
+			memset(block_left->data+block_offset, 0, (AUDIO_BLOCK_SAMPLES-block_offset)*sizeof(int32_t)); 
+			memset(block_right->data+block_offset, 0, (AUDIO_BLOCK_SAMPLES-block_offset)*sizeof(int32_t)); 
 #ifdef DEBUG_SPDIF_IN	
 			Serial.print("filled only ");
 			Serial.print(block_offset);

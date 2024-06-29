@@ -78,7 +78,7 @@ void AudioOutputI2S2::begin(void)
 
 void AudioOutputI2S2::isr(void)
 {
-	int16_t *dest;
+	int32_t *dest;
 	audio_block_t *blockL, *blockR;
 	uint32_t saddr, offsetL, offsetR;
 
@@ -87,12 +87,12 @@ void AudioOutputI2S2::isr(void)
 	if (saddr < (uint32_t)i2s2_tx_buffer + sizeof(i2s2_tx_buffer) / 2) {
 		// DMA is transmitting the first half of the buffer
 		// so we must fill the second half
-		dest = (int16_t *)&i2s2_tx_buffer[AUDIO_BLOCK_SAMPLES/2];
+		dest = (int32_t *)&i2s2_tx_buffer[AUDIO_BLOCK_SAMPLES/2];
 		if (AudioOutputI2S2::update_responsibility) AudioStream::update_all();
 	} else {
 		// DMA is transmitting the second half of the buffer
 		// so we must fill the first half
-		dest = (int16_t *)i2s2_tx_buffer;
+		dest = (int32_t *)i2s2_tx_buffer;
 	}
 
 	blockL = AudioOutputI2S2::block_left_1st;

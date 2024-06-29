@@ -28,7 +28,7 @@
 #include "synth_simple_drum.h"
 
 extern "C" {
-extern const int16_t AudioWaveformSine[257];
+extern const int32_t AudioWaveformSine[257];
 }
 
 void AudioSynthSimpleDrum::noteOn(void)
@@ -111,7 +111,7 @@ void AudioSynthSimpleDrum::update(void)
 {
 #if defined(KINETISK) || defined(__IMXRT1062__)
   audio_block_t *block_wav;
-  int16_t *p_wave, *end;
+  int32_t *p_wave, *end;
   int32_t sin_l, sin_r, interp, mod, mod2, delta;
   int32_t interp2;
   int32_t index, scale;

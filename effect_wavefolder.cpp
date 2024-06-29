@@ -34,8 +34,8 @@ void AudioEffectWaveFolder::update()
     release (blocka);
     return;
   }
-  int16_t * pa = blocka->data ;
-  int16_t * pb = blockb->data ;
+  int32_t * pa = blocka->data ;
+  int32_t * pb = blockb->data ;
   for (int i = 0 ; i < AUDIO_BLOCK_SAMPLES ; i++)
   {
     int32_t a12 = pa[i];

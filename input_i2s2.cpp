@@ -33,7 +33,7 @@
 DMAMEM __attribute__((aligned(32))) static uint32_t i2s2_rx_buffer[AUDIO_BLOCK_SAMPLES];
 audio_block_t * AudioInputI2S2::block_left = NULL;
 audio_block_t * AudioInputI2S2::block_right = NULL;
-uint16_t AudioInputI2S2::block_offset = 0;
+uint32_t AudioInputI2S2::block_offset = 0;
 bool AudioInputI2S2::update_responsibility = false;
 DMAChannel AudioInputI2S2::dma(false);
 
@@ -75,8 +75,8 @@ void AudioInputI2S2::begin(void)
 void AudioInputI2S2::isr(void)
 {
 	uint32_t daddr, offset;
-	const int16_t *src, *end;
-	int16_t *dest_left, *dest_right;
+	const int32_t *src, *end;
+	int32_t *dest_left, *dest_right;
 	audio_block_t *left, *right;
 
 	daddr = (uint32_t)(dma.TCD->DADDR);
@@ -85,14 +85,14 @@ void AudioInputI2S2::isr(void)
 	if (daddr < (uint32_t)i2s2_rx_buffer + sizeof(i2s2_rx_buffer) / 2) {
 		// DMA is receiving to the first half of the buffer
 		// need to remove data from the second half
-		src = (int16_t *)&i2s2_rx_buffer[AUDIO_BLOCK_SAMPLES/2];
-		end = (int16_t *)&i2s2_rx_buffer[AUDIO_BLOCK_SAMPLES];
+		src = (int32_t *)&i2s2_rx_buffer[AUDIO_BLOCK_SAMPLES/2];
+		end = (int32_t *)&i2s2_rx_buffer[AUDIO_BLOCK_SAMPLES];
 		if (AudioInputI2S2::update_responsibility) AudioStream::update_all();
 	} else {
 		// DMA is receiving to the second half of the buffer
 		// need to remove data from the first half
-		src = (int16_t *)&i2s2_rx_buffer[0];
-		end = (int16_t *)&i2s2_rx_buffer[AUDIO_BLOCK_SAMPLES/2];
+		src = (int32_t *)&i2s2_rx_buffer[0];
+		end = (int32_t *)&i2s2_rx_buffer[AUDIO_BLOCK_SAMPLES/2];
 	}
 	left = AudioInputI2S2::block_left;
 	right = AudioInputI2S2::block_right;

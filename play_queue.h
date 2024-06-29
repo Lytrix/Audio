@@ -41,10 +41,10 @@ private:
 public:
 	AudioPlayQueue(void) : AudioStream(0, NULL),
 	  userblock(NULL), uptr(0), head(0), tail(0), max_buffers(MAX_BUFFERS) { }
-	uint32_t play(int16_t data);
-	uint32_t play(const int16_t *data, uint32_t len);
+	uint32_t play(int32_t data);
+	uint32_t play(const int32_t *data, uint32_t len);
 	bool available(void);
-	int16_t * getBuffer(void);
+	int32_t * getBuffer(void);
 	uint32_t playBuffer(void);
 	void stop(void);
 	void setMaxBuffers(uint8_t);

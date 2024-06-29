@@ -49,8 +49,8 @@ protected:
 private:
 	static audio_block_t *block_left_2nd;
 	static audio_block_t *block_right_2nd;
-	static uint16_t block_left_offset;
-	static uint16_t block_right_offset;
+	static uint32_t block_left_offset;
+	static uint32_t block_right_offset;
 	audio_block_t *inputQueueArray[2];
 };
 

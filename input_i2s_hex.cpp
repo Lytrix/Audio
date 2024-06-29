@@ -92,8 +92,8 @@ void AudioInputI2SHex::begin(void)
 void AudioInputI2SHex::isr(void)
 {
 	uint32_t daddr, offset;
-	const int16_t *src;
-	int16_t *dest1, *dest2, *dest3, *dest4, *dest5, *dest6;
+	const int32_t *src;
+	int32_t *dest1, *dest2, *dest3, *dest4, *dest5, *dest6;
 
 	//digitalWriteFast(3, HIGH);
 	daddr = (uint32_t)(dma.TCD->DADDR);
@@ -102,12 +102,12 @@ void AudioInputI2SHex::isr(void)
 	if (daddr < (uint32_t)i2s_rx_buffer + sizeof(i2s_rx_buffer) / 2) {
 		// DMA is receiving to the first half of the buffer
 		// need to remove data from the second half
-		src = (int16_t *)((uint32_t)i2s_rx_buffer + sizeof(i2s_rx_buffer) / 2);
+		src = (int32_t *)((uint32_t)i2s_rx_buffer + sizeof(i2s_rx_buffer) / 2);
 		if (update_responsibility) update_all();
 	} else {
 		// DMA is receiving to the second half of the buffer
 		// need to remove data from the first half
-		src = (int16_t *)&i2s_rx_buffer[0];
+		src = (int32_t *)&i2s_rx_buffer[0];
 	}
 	if (block_ch1) {
 		offset = block_offset;

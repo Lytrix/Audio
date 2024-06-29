@@ -57,7 +57,7 @@ protected:
 	static DMAChannel dma;
 	static void isr(void);
 private:
-	void resample(int16_t* data_left, int16_t* data_right, int32_t& block_offset);
+	void resample(int32_t* data_left, int32_t* data_right, int32_t& block_offset);
 	void monitorResampleBuffer();
 	void configure();
 	double getNewValidInputFrequ();

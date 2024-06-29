@@ -131,19 +131,19 @@ void AudioOutputI2SQuad::begin(void)
 void AudioOutputI2SQuad::isr(void)
 {
 	uint32_t saddr;
-	const int16_t *src1, *src2, *src3, *src4;
-	const int16_t *zeros = (const int16_t *)zerodata;
-	int16_t *dest;
+	const int32_t *src1, *src2, *src3, *src4;
+	const int32_t *zeros = (const int32_t *)zerodata;
+	int32_t *dest;
 
 	saddr = (uint32_t)(dma.TCD->SADDR);
 	dma.clearInterrupt();
 	if (saddr < (uint32_t)i2s_tx_buffer + sizeof(i2s_tx_buffer) / 2) {
 		// DMA is transmitting the first half of the buffer
 		// so we must fill the second half
-		dest = (int16_t *)&i2s_tx_buffer[AUDIO_BLOCK_SAMPLES];
+		dest = (int32_t *)&i2s_tx_buffer[AUDIO_BLOCK_SAMPLES];
 		if (update_responsibility) update_all();
 	} else {
-		dest = (int16_t *)i2s_tx_buffer;
+		dest = (int32_t *)i2s_tx_buffer;
 	}
 
 	src1 = (block_ch1_1st) ? block_ch1_1st->data + ch1_offset : zeros;

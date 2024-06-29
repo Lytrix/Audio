@@ -31,7 +31,7 @@
 #if defined(__ARM_ARCH_7EM__)
 #define MULTI_UNITYGAIN 65536
 
-static void applyGain(int16_t *data, int32_t mult)
+static void applyGain(int32_t *data, int32_t mult)
 {
 	uint32_t *p = (uint32_t *)data;
 	const uint32_t *end = (uint32_t *)(data + AUDIO_BLOCK_SAMPLES);
@@ -46,7 +46,7 @@ static void applyGain(int16_t *data, int32_t mult)
 	} while (p < end);
 }
 
-static void applyGainThenAdd(int16_t *data, const int16_t *in, int32_t mult)
+static void applyGainThenAdd(int32_t *data, const int32_t *in, int32_t mult)
 {
 	uint32_t *dst = (uint32_t *)data;
 	const uint32_t *src = (uint32_t *)in;

@@ -33,10 +33,10 @@ void AudioEffectRectifier::update(void)
 	audio_block_t *block = receiveWritable();
 	if (!block) return;
 
-	int16_t *p = block->data;
-	int16_t *end = block->data + AUDIO_BLOCK_SAMPLES;
+	int32_t *p = block->data;
+	int32_t *end = block->data + AUDIO_BLOCK_SAMPLES;
 	while (p < end) {
-		int b = *p;
+		int32_t b = *p;
 		int t = *(p + 1);
 		if (b < 0) b = -b;
 		if (t < 0) t = -t;

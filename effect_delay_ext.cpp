@@ -176,7 +176,7 @@ void AudioEffectDelayExternal::initialize(AudioEffectDelayMemoryType_t type, uin
 static int16_t testmem[8000]; // testing only
 #endif
 
-void AudioEffectDelayExternal::read(uint32_t offset, uint32_t count, int16_t *data)
+void AudioEffectDelayExternal::read(uint32_t offset, uint32_t count, int32_t *data)
 {
 	uint32_t addr = memory_begin + offset;
 
@@ -191,7 +191,7 @@ void AudioEffectDelayExternal::read(uint32_t offset, uint32_t count, int16_t *da
 		SPI.transfer16((0x03 << 8) | (addr >> 16));
 		SPI.transfer16(addr & 0xFFFF);
 		while (count) {
-			*data++ = (int16_t)(SPI.transfer16(0));
+			*data++ = (int32_t)(SPI.transfer16(0));
 			count--;
 		}
 		digitalWriteFast(SPIRAM_CS_PIN, HIGH);
@@ -211,7 +211,7 @@ void AudioEffectDelayExternal::read(uint32_t offset, uint32_t count, int16_t *da
 			count -= num;
 			addr += num;
 			do {
-				*data++ = (int16_t)(SPI.transfer16(0));
+				*data++ = (int32_t)(SPI.transfer16(0));
 			} while (--num > 0);
 		}
 		digitalWriteFast(MEMBOARD_CS0_PIN, LOW);
@@ -222,7 +222,7 @@ void AudioEffectDelayExternal::read(uint32_t offset, uint32_t count, int16_t *da
 #endif
 }
 
-void AudioEffectDelayExternal::write(uint32_t offset, uint32_t count, const int16_t *data)
+void AudioEffectDelayExternal::write(uint32_t offset, uint32_t count, const int32_t *data)
 {
 	uint32_t addr = memory_begin + offset;
 

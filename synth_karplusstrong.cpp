@@ -51,7 +51,7 @@ void AudioSynthKarplusStrong::update(void)
 
 	if (state == 1) {
 		uint32_t lo = seed;
-		for (int i=0; i < bufferLen; i++) {
+		for (uint32_t i=0; i < bufferLen; i++) {
 			lo = pseudorand(lo);
 			buffer[i] = signed_multiply_32x16b(magnitude, lo);
 		}
@@ -71,11 +71,11 @@ void AudioSynthKarplusStrong::update(void)
 	} else {
 		prior = buffer[bufferLen - 1];
 	}
-	int16_t *data = block->data;
+	int32_t *data = block->data;
 	for (int i=0; i < AUDIO_BLOCK_SAMPLES; i++) {
-		int16_t in = buffer[bufferIndex];
+		int32_t in = buffer[bufferIndex];
 		//int16_t out = (in * 32604 + prior * 32604) >> 16;
-		int16_t out = (in * 32686 + prior * 32686) >> 16;
+		int32_t out = (in * 32686 + prior * 32686) >> 16;
 		//int16_t out = (in * 32768 + prior * 32768) >> 16;
 		*data++ = out;
 		buffer[bufferIndex] = out;
