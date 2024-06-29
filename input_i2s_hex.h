@@ -45,8 +45,8 @@ private:
 	static audio_block_t *block_ch2;
 	static audio_block_t *block_ch3;
 	static audio_block_t *block_ch4;
-	static audio_block_t *block_ch5;
-	static audio_block_t *block_ch6;
+	// static audio_block_t *block_ch5;
+	// static audio_block_t *block_ch6;
 	static uint16_t block_offset;
 };
 

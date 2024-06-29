@@ -389,7 +389,9 @@ void AudioOutputI2S::config_i2s(bool only_bclk)
 	CORE_PIN9_CONFIG  = PORT_PCR_MUX(6); // pin  9, PTC3, I2S0_TX_BCLK
 
 #elif defined(__IMXRT1062__)
-
+	
+	
+	// initialize the MCLK divider and enable clock output
 	CCM_CCGR5 |= CCM_CCGR5_SAI1(CCM_CCGR_ON);
 
 	// if either transmitter or receiver is enabled, do nothing
@@ -402,9 +404,10 @@ void AudioOutputI2S::config_i2s(bool only_bclk)
 	  }
 	  return ;
 	}
-
-	//PLL:
-	int fs = AUDIO_SAMPLE_RATE_EXACT;
+	// ------------------------------------------------------------
+	// Setup the Audio PLL Clock
+	// ------------------------------------------------------------
+	int fs = AUDIO_SAMPLE_RATE_EXACT; // set in Teensy/Cores/Teensy4/AudioStream.h
 	// PLL between 27*24 = 648MHz und 54*24=1296MHz
 	int n1 = 4; //SAI prescaler 4 => (n1*n2) = multiple of 4
 	int n2 = 1 + (24000000 * 27) / (fs * 256 * n1);
@@ -415,17 +418,24 @@ void AudioOutputI2S::config_i2s(bool only_bclk)
 	int c1 = C * c2 - (c0 * c2);
 	set_audioClock(c0, c1, c2);
 
-	// clear SAI1_CLK register locations
-	CCM_CSCMR1 = (CCM_CSCMR1 & ~(CCM_CSCMR1_SAI1_CLK_SEL_MASK))
-		   | CCM_CSCMR1_SAI1_CLK_SEL(2); // &0x03 // (0,1,2): PLL3PFD0, PLL5, PLL4
-	CCM_CS1CDR = (CCM_CS1CDR & ~(CCM_CS1CDR_SAI1_CLK_PRED_MASK | CCM_CS1CDR_SAI1_CLK_PODF_MASK))
-		   | CCM_CS1CDR_SAI1_CLK_PRED(n1-1) // &0x07
-		   | CCM_CS1CDR_SAI1_CLK_PODF(n2-1); // &0x3f
+	// Clear SAI1_CLK register locations and select PLL4 (0,1,2): PLL3PFD0, PLL5, PLL4
+	
+	int PLL4 = 2; // Audio PLL
+	
+	CCM_CSCMR1 = 
+	  (CCM_CSCMR1 & ~(CCM_CSCMR1_SAI1_CLK_SEL_MASK))
+	| CCM_CSCMR1_SAI1_CLK_SEL(PLL4);
+	CCM_CS1CDR = 
+	  (CCM_CS1CDR & ~(CCM_CS1CDR_SAI1_CLK_PRED_MASK 
+	| CCM_CS1CDR_SAI1_CLK_PODF_MASK))
+	| CCM_CS1CDR_SAI1_CLK_PRED(n1-1)  // &0x07
+	| CCM_CS1CDR_SAI1_CLK_PODF(n2-1); // &0x3f
 
 	// Select MCLK
-	IOMUXC_GPR_GPR1 = (IOMUXC_GPR_GPR1
-		& ~(IOMUXC_GPR_GPR1_SAI1_MCLK1_SEL_MASK))
-		| (IOMUXC_GPR_GPR1_SAI1_MCLK_DIR | IOMUXC_GPR_GPR1_SAI1_MCLK1_SEL(0));
+	IOMUXC_GPR_GPR1 = 
+	  (IOMUXC_GPR_GPR1 & ~(IOMUXC_GPR_GPR1_SAI1_MCLK1_SEL_MASK))
+	| (IOMUXC_GPR_GPR1_SAI1_MCLK_DIR 
+	| IOMUXC_GPR_GPR1_SAI1_MCLK1_SEL(0));
 
 	if (!only_bclk)
 	{
@@ -436,26 +446,86 @@ void AudioOutputI2S::config_i2s(bool only_bclk)
 
 	int rsync = 0;
 	int tsync = 1;
+	int chns = 8;
+	int bits = 32;
 
-	I2S1_TMR = 0;
-	//I2S1_TCSR = (1<<25); //Reset
-	I2S1_TCR1 = I2S_TCR1_RFW(1);
-	I2S1_TCR2 = I2S_TCR2_SYNC(tsync) | I2S_TCR2_BCP // sync=0; tx is async;
-		    | (I2S_TCR2_BCD | I2S_TCR2_DIV((1)) | I2S_TCR2_MSEL(1));
-	I2S1_TCR3 = I2S_TCR3_TCE;
-	I2S1_TCR4 = I2S_TCR4_FRSZ((2-1)) | I2S_TCR4_SYWD((32-1)) | I2S_TCR4_MF
-		    | I2S_TCR4_FSD | I2S_TCR4_FSE | I2S_TCR4_FSP;
-	I2S1_TCR5 = I2S_TCR5_WNW((32-1)) | I2S_TCR5_W0W((32-1)) | I2S_TCR5_FBT((32-1));
+	// ------------------------------------------------------------
+	// Initialize all the RX (receive) registers, configure the
+	// bit and word (frame sync) clocks, and setup interrupts.
+	// note: SAI stands for "Synchronous Audio Interface"
+	// ------------------------------------------------------------
 
-	I2S1_RMR = 0;
-	//I2S1_RCSR = (1<<25); //Reset
-	I2S1_RCR1 = I2S_RCR1_RFW(1);
-	I2S1_RCR2 = I2S_RCR2_SYNC(rsync) | I2S_RCR2_BCP  // sync=0; rx is async;
-		    | (I2S_RCR2_BCD | I2S_RCR2_DIV((1)) | I2S_RCR2_MSEL(1));
-	I2S1_RCR3 = I2S_RCR3_RCE;
-	I2S1_RCR4 = I2S_RCR4_FRSZ((2-1)) | I2S_RCR4_SYWD((32-1)) | I2S_RCR4_MF
-		    | I2S_RCR4_FSE | I2S_RCR4_FSP | I2S_RCR4_FSD;
-	I2S1_RCR5 = I2S_RCR5_WNW((32-1)) | I2S_RCR5_W0W((32-1)) | I2S_RCR5_FBT((32-1));
+	I2S1_RMR = 0;					// Don't mask any words
+
+	// SAI Receive Configuration 1 Register
+	I2S1_RCR1 = 
+	  I2S_RCR1_RFW(chns - 1); // Set FIFO watermark for each word
+	
+  	// SAI Receive Configuration 2 Register
+	I2S1_RCR2 = 
+	   I2S_RCR2_SYNC(rsync)			// Use asynchronous mode
+	| I2S_RCR2_BCP  				// BCLK is active low
+	| (I2S_RCR2_BCD 
+	| I2S_RCR2_DIV(0) 			// (DIV + 1) * 2, example: 12.288 MHz / 4 = 3.072 MHz  
+	| I2S_RCR2_MSEL(1));			// Use MCLK as BCLK source
+	
+	// SAI Receive Configuration 3 Register
+	I2S1_RCR3 = I2S_RCR3_RCE;  		// Enable receive channel
+
+ 	// SAI Receive Configuration 4 Register
+	I2S1_RCR4 = 
+	  I2S_RCR4_FRSZ(chns - 1) 	// Frame size in total channels (=words)
+	| I2S_RCR4_SYWD(bits-1) 		// Bit width of WCLK
+	| I2S_RCR4_MF					// MSB (most significant bit) first
+	| I2S_RCR4_FSE 					// Extra bit before frame starts
+	| I2S_RCR4_FSP 					// Sync early
+	| I2S_RCR4_FSD;					// Generate WCLK, master mode
+	
+	// SAI Receive Configuration 5 Register
+	I2S1_RCR5 = 
+	   I2S_RCR5_W0W(bits-1)		// Bits per word, first frame
+	|  I2S_RCR5_WNW(bits-1) 		// Bits per word, nth frame
+	|  I2S_RCR5_FBT(bits-1);		// Index shifted for FIFO
+
+	// ------------------------------------------------------------
+	// Initialize all the TX (transmit) registers
+	// ------------------------------------------------------------
+
+	I2S1_TMR = 0;	// Don't mask any words
+	
+	// SAI Transmit Configuration 1 Register
+	I2S1_TCR1 = I2S_TCR1_RFW(chns - 1); // Set FIFO watermark for each word
+	
+	// SAI Transmit Configuration 2 Register
+	I2S1_TCR2 = 
+	   I2S_TCR2_SYNC(tsync) // Bit clock generated externally (slave mode =1), master mode = 0?   
+	| I2S_TCR2_BCP			// Bit clock selected for active low (drive on falling edge, sample on rising edge)
+	| (I2S_TCR2_BCD | I2S_TCR2_DIV(1) | I2S_TCR2_MSEL(1));
+	
+	// SAI Transmit Configuration 3 Register 
+	I2S1_TCR3 = I2S_TCR3_TCE;	// Only enable ch 0
+	
+	// SAI Transmit Configuration 4 Register 
+	I2S1_TCR4 = 
+	  I2S_TCR4_FRSZ(chns - 1) 	// Frame size is 2 (L + R), sync width is 32 (LR clock is active for first word),
+	| I2S_TCR4_SYWD(bits-1) 		// Bit width of WCLK
+	| I2S_TCR4_MF					// MSB (most significant bit) first
+	| I2S_TCR4_FSD 
+	| I2S_TCR4_FSE 					// Extra bit before frame starts
+	| I2S_TCR4_FSP;					// Sync early
+	  
+	// SAI Transmit Configuration 5 Register 
+	I2S1_TCR5 = 
+	  I2S_TCR5_W0W(bits-1)		// Bits per word, first frame
+	| I2S_TCR5_WNW(bits-1)		// Bits per word, nth frame
+	| I2S_TCR5_FBT(bits-1);		// Index shifted for FIFO
+	
+	// SAI Receive Control Register (to be)
+  	// I2S1_RCSR =
+    //   I2S_RCSR_BCE   				// Enable the BCLK output
+  	// | I2S_RCSR_RE    				// Enable receive globally
+  	// | I2S_RCSR_FRIE;  				// Enable FIFO request interrupt
+  	//I2S1_RCSR = (1<<25); 			// Reset (not used)
 
 #endif
 }
@@ -574,23 +644,27 @@ void AudioOutputI2Sslave::config_i2s(void)
 	IOMUXC_SAI1_RX_BCLK_SELECT_INPUT = 1; // 1=GPIO_AD_B1_11_ALT3, page 868
 	IOMUXC_SAI1_RX_SYNC_SELECT_INPUT = 1; // 1=GPIO_AD_B1_10_ALT3, page 872
 
+	int chns = 4;
+	int bits = 32;
+	int rsync = 0;
+	int tsync = 1;
 	// configure transmitter
 	I2S1_TMR = 0;
-	I2S1_TCR1 = I2S_TCR1_RFW(1);  // watermark at half fifo size
-	I2S1_TCR2 = I2S_TCR2_SYNC(1) | I2S_TCR2_BCP;
+	I2S1_TCR1 = I2S_TCR1_RFW(chns - 1);  // watermark at half fifo size
+	I2S1_TCR2 = I2S_TCR2_SYNC(tsync) | I2S_TCR2_BCP;
 	I2S1_TCR3 = I2S_TCR3_TCE;
-	I2S1_TCR4 = I2S_TCR4_FRSZ(1) | I2S_TCR4_SYWD(31) | I2S_TCR4_MF
+	I2S1_TCR4 = I2S_TCR4_FRSZ(chns - 1) | I2S_TCR4_SYWD((bits-1)) | I2S_TCR4_MF
 		| I2S_TCR4_FSE | I2S_TCR4_FSP | I2S_RCR4_FSD;
-	I2S1_TCR5 = I2S_TCR5_WNW(31) | I2S_TCR5_W0W(31) | I2S_TCR5_FBT(31);
+	I2S1_TCR5 = I2S_TCR5_WNW((bits-1)) | I2S_TCR5_W0W((bits-1)) | I2S_TCR5_FBT((bits-1));
 
 	// configure receiver
 	I2S1_RMR = 0;
-	I2S1_RCR1 = I2S_RCR1_RFW(1);
-	I2S1_RCR2 = I2S_RCR2_SYNC(0) | I2S_TCR2_BCP;
+	I2S1_RCR1 = I2S_RCR1_RFW(chns - 1);
+	I2S1_RCR2 = I2S_RCR2_SYNC(rsync) | I2S_TCR2_BCP;
 	I2S1_RCR3 = I2S_RCR3_RCE;
-	I2S1_RCR4 = I2S_RCR4_FRSZ(1) | I2S_RCR4_SYWD(31) | I2S_RCR4_MF
+	I2S1_RCR4 = I2S_RCR4_FRSZ(chns - 1) | I2S_RCR4_SYWD((bits-1)) | I2S_RCR4_MF
 		| I2S_RCR4_FSE | I2S_RCR4_FSP;
-	I2S1_RCR5 = I2S_RCR5_WNW(31) | I2S_RCR5_W0W(31) | I2S_RCR5_FBT(31);
+	I2S1_RCR5 = I2S_RCR5_WNW(bits-1) | I2S_RCR5_W0W((bits-1)) | I2S_RCR5_FBT((bits-1));
 
 #endif
 }
@@ -838,4 +912,3 @@ void AudioOutputI2Sslave::config_i2s(void)
 }
 
 #endif
-

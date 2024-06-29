@@ -33,8 +33,8 @@ audio_block_t * AudioInputI2SHex::block_ch1 = NULL;
 audio_block_t * AudioInputI2SHex::block_ch2 = NULL;
 audio_block_t * AudioInputI2SHex::block_ch3 = NULL;
 audio_block_t * AudioInputI2SHex::block_ch4 = NULL;
-audio_block_t * AudioInputI2SHex::block_ch5 = NULL;
-audio_block_t * AudioInputI2SHex::block_ch6 = NULL;
+// audio_block_t * AudioInputI2SHex::block_ch5 = NULL;
+// audio_block_t * AudioInputI2SHex::block_ch6 = NULL;
 uint16_t AudioInputI2SHex::block_offset = 0;
 bool AudioInputI2SHex::update_responsibility = false;
 DMAChannel AudioInputI2SHex::dma(false);
@@ -45,46 +45,69 @@ void AudioInputI2SHex::begin(void)
 {
 	dma.begin(true); // Allocate the DMA channel first
 
-	const int pinoffset = 0; // TODO: make this configurable...
+	// const int pinoffset = 0; // TODO: make this configurable...
 	AudioOutputI2S::config_i2s();
-	I2S1_RCR3 = I2S_RCR3_RCE_3CH << pinoffset;
-	switch (pinoffset) {
-	  case 0:
-		CORE_PIN8_CONFIG = 3;
-		CORE_PIN6_CONFIG = 3;
-		CORE_PIN9_CONFIG = 3;
-		IOMUXC_SAI1_RX_DATA0_SELECT_INPUT = 2; // GPIO_B1_00_ALT3, pg 873
-		IOMUXC_SAI1_RX_DATA1_SELECT_INPUT = 1; // GPIO_B0_10_ALT3, pg 873
-		IOMUXC_SAI1_RX_DATA2_SELECT_INPUT = 1; // GPIO_B0_11_ALT3, pg 874
-		break;
-	  case 1:
-		CORE_PIN6_CONFIG = 3;
-		CORE_PIN9_CONFIG = 3;
-		CORE_PIN32_CONFIG = 3;
-		IOMUXC_SAI1_RX_DATA1_SELECT_INPUT = 1; // GPIO_B0_10_ALT3, pg 873
-		IOMUXC_SAI1_RX_DATA2_SELECT_INPUT = 1; // GPIO_B0_11_ALT3, pg 874
-		IOMUXC_SAI1_RX_DATA3_SELECT_INPUT = 1; // GPIO_B0_12_ALT3, pg 875
-		break;
-	}
-	dma.TCD->SADDR = (void *)((uint32_t)&I2S1_RDR0 + 2 + pinoffset * 4);
-	dma.TCD->SOFF = 4;
-	dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE(1) | DMA_TCD_ATTR_DSIZE(1);
-	dma.TCD->NBYTES_MLOFFYES = DMA_TCD_NBYTES_SMLOE |
-		DMA_TCD_NBYTES_MLOFFYES_MLOFF(-12) |
-		DMA_TCD_NBYTES_MLOFFYES_NBYTES(6);
-	dma.TCD->SLAST = -12;
-	dma.TCD->DADDR = i2s_rx_buffer;
-	dma.TCD->DOFF = 2;
-	dma.TCD->CITER_ELINKNO = AUDIO_BLOCK_SAMPLES * 2;
-	dma.TCD->DLASTSGA = -sizeof(i2s_rx_buffer);
-	dma.TCD->BITER_ELINKNO = AUDIO_BLOCK_SAMPLES * 2;
-	dma.TCD->CSR = DMA_TCD_CSR_INTHALF | DMA_TCD_CSR_INTMAJOR;
-	dma.triggerAtHardwareEvent(DMAMUX_SOURCE_SAI1_RX);
+	// I2S1_RCR3 = I2S_RCR3_RCE_3CH << pinoffset;
+	// switch (pinoffset) {
+	//   case 0:
+	// 	CORE_PIN8_CONFIG = 3;
+	// 	CORE_PIN6_CONFIG = 3;
+	// 	CORE_PIN9_CONFIG = 3;
+	// 	IOMUXC_SAI1_RX_DATA0_SELECT_INPUT = 2; // GPIO_B1_00_ALT3, pg 873
+	// 	IOMUXC_SAI1_RX_DATA1_SELECT_INPUT = 1; // GPIO_B0_10_ALT3, pg 873
+	// 	IOMUXC_SAI1_RX_DATA2_SELECT_INPUT = 1; // GPIO_B0_11_ALT3, pg 874
+	// 	break;
+	//   case 1:
+	// 	CORE_PIN6_CONFIG = 3;
+	// 	CORE_PIN9_CONFIG = 3;
+	// 	CORE_PIN32_CONFIG = 3;
+	// 	IOMUXC_SAI1_RX_DATA1_SELECT_INPUT = 1; // GPIO_B0_10_ALT3, pg 873
+	// 	IOMUXC_SAI1_RX_DATA2_SELECT_INPUT = 1; // GPIO_B0_11_ALT3, pg 874
+	// 	IOMUXC_SAI1_RX_DATA3_SELECT_INPUT = 1; // GPIO_B0_12_ALT3, pg 875
+	// 	break;
+	// }
+	
+	// dma.TCD->SADDR = (void *)((uint32_t)&I2S1_RDR0 + 2 + pinoffset * 4);
+	// dma.TCD->SOFF = 4;
+	// dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE(1) | DMA_TCD_ATTR_DSIZE(1);
+	// dma.TCD->NBYTES_MLOFFYES = DMA_TCD_NBYTES_SMLOE |
+	// 	DMA_TCD_NBYTES_MLOFFYES_MLOFF(-12) |
+	// 	DMA_TCD_NBYTES_MLOFFYES_NBYTES(6);
+	// dma.TCD->SLAST = -12;
+	// dma.TCD->DADDR = i2s_rx_buffer;
+	// dma.TCD->DOFF = 2;
+	// dma.TCD->CITER_ELINKNO = AUDIO_BLOCK_SAMPLES * 2;
+	// dma.TCD->DLASTSGA = -sizeof(i2s_rx_buffer);
+	// dma.TCD->BITER_ELINKNO = AUDIO_BLOCK_SAMPLES * 2;
+	// dma.TCD->CSR = DMA_TCD_CSR_INTHALF | DMA_TCD_CSR_INTMAJOR;
+	// dma.triggerAtHardwareEvent(DMAMUX_SOURCE_SAI1_RX);
 
-	//I2S1_RCSR = 0;
-	//I2S1_RCR3 = I2S_RCR3_RCE_2CH << pinoffset;
+	// //I2S1_RCSR = 0;
+	// //I2S1_RCR3 = I2S_RCR3_RCE_2CH << pinoffset;
+	// I2S1_RCSR = I2S_RCSR_RE | I2S_RCSR_BCE | I2S_RCSR_FRDE | I2S_RCSR_FR;
+	
+	CORE_PIN8_CONFIG  = 3;  //1:RX_DATA0
+	IOMUXC_SAI1_RX_DATA0_SELECT_INPUT = 2;
+
+	dma.TCD->SADDR = (void *)((uint32_t)&I2S1_RDR0 + 0) ; // source address, read from 0 byte offset as we want the full 32 bits
+	dma.TCD->SOFF = 4; // how many bytes to jump from current address on the next move. We're always reading the same register so no jump.
+	dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE(2) | DMA_TCD_ATTR_DSIZE(2); // 1=16bits, 2=32 bits. size of source, size of dest
+	dma.TCD->NBYTES_MLNO = 4; // number of bytes to move, minor loop.
+	dma.TCD->SLAST = 0; // how many bytes to jump when hitting the end of the major loop. In this case, no change to the source address.
+	dma.TCD->DADDR = i2s_rx_buffer; // Destination address.
+	dma.TCD->DOFF = 4; // how many bytes to move the destination at each minor loop. jump 4 bytes.
+	dma.TCD->CITER_ELINKNO = sizeof(i2s_rx_buffer) / 4; // how many iterations are in the major loop
+	dma.TCD->DLASTSGA = -sizeof(i2s_rx_buffer); // how many bytes to jump the destination address at the end of the major loop
+	dma.TCD->BITER_ELINKNO = sizeof(i2s_rx_buffer) / 4; // beginning iteration count
+	dma.TCD->CSR = DMA_TCD_CSR_INTHALF | DMA_TCD_CSR_INTMAJOR; // Tells the DMA mechanism to trigger interrupt at half and full population of the buffer
+	dma.triggerAtHardwareEvent(DMAMUX_SOURCE_SAI1_RX); // run DMA at hardware event when new I2S data transmitted.
+
+	// Enabled transmitting and receiving
 	I2S1_RCSR = I2S_RCSR_RE | I2S_RCSR_BCE | I2S_RCSR_FRDE | I2S_RCSR_FR;
+
+	
 	update_responsibility = update_setup();
+	
 	dma.enable();
 	dma.attachInterrupt(isr);
 }
@@ -93,7 +116,7 @@ void AudioInputI2SHex::isr(void)
 {
 	uint32_t daddr, offset;
 	const int32_t *src;
-	int32_t *dest1, *dest2, *dest3, *dest4, *dest5, *dest6;
+	int32_t *dest1, *dest2, *dest3, *dest4; //, *dest5, *dest6;
 
 	//digitalWriteFast(3, HIGH);
 	daddr = (uint32_t)(dma.TCD->DADDR);
@@ -118,15 +141,15 @@ void AudioInputI2SHex::isr(void)
 			dest2 = &(block_ch2->data[offset]);
 			dest3 = &(block_ch3->data[offset]);
 			dest4 = &(block_ch4->data[offset]);
-			dest5 = &(block_ch5->data[offset]);
-			dest6 = &(block_ch6->data[offset]);
+			// dest5 = &(block_ch5->data[offset]);
+			// dest6 = &(block_ch6->data[offset]);
 			for (int i=0; i < AUDIO_BLOCK_SAMPLES/2; i++) {
 				*dest1++ = *src++;
-				*dest3++ = *src++;
-				*dest5++ = *src++;
 				*dest2++ = *src++;
-				*dest4++ = *src++;
-				*dest6++ = *src++;
+				//*dest5++ = *src++;
+				*dest3++ = *src++;
+			    *dest4++ = *src++;
+				// *dest6++ = *src++;
 			}
 		}
 	}
@@ -136,18 +159,18 @@ void AudioInputI2SHex::isr(void)
 
 void AudioInputI2SHex::update(void)
 {
-	audio_block_t *new1, *new2, *new3, *new4, *new5, *new6;
-	audio_block_t *out1, *out2, *out3, *out4, *out5, *out6;
+	audio_block_t *new1, *new2, *new3, *new4; //, *new5, *new6;
+	audio_block_t *out1, *out2, *out3, *out4; //, *out5, *out6;
 
 	// allocate 6 new blocks
 	new1 = allocate();
 	new2 = allocate();
 	new3 = allocate();
 	new4 = allocate();
-	new5 = allocate();
-	new6 = allocate();
+	// new5 = allocate();
+	// new6 = allocate();
 	// but if any fails, allocate none
-	if (!new1 || !new2 || !new3 || !new4 || !new5 || !new6) {
+	if (!new1 || !new2 || !new3 || !new4) {
 		if (new1) {
 			release(new1);
 			new1 = NULL;
@@ -164,14 +187,14 @@ void AudioInputI2SHex::update(void)
 			release(new4);
 			new4 = NULL;
 		}
-		if (new5) {
-			release(new5);
-			new5 = NULL;
-		}
-		if (new6) {
-			release(new6);
-			new6 = NULL;
-		}
+		// if (new5) {
+		// 	release(new5);
+		// 	new5 = NULL;
+		// }
+		// if (new6) {
+		// 	release(new6);
+		// 	new6 = NULL;
+		// }
 	}
 	__disable_irq();
 	if (block_offset >= AUDIO_BLOCK_SAMPLES) {
@@ -185,11 +208,11 @@ void AudioInputI2SHex::update(void)
 		block_ch3 = new3;
 		out4 = block_ch4;
 		block_ch4 = new4;
-		out5 = block_ch5;
-		block_ch5 = new5;
-		out6 = block_ch6;
-		block_ch6 = new6;
-		block_offset = 0;
+		// out5 = block_ch5;
+		// block_ch5 = new5;
+		// out6 = block_ch6;
+		// block_ch6 = new6;
+		// block_offset = 0;
 		__enable_irq();
 		// then transmit the DMA's former blocks
 		transmit(out1, 0);
@@ -200,10 +223,10 @@ void AudioInputI2SHex::update(void)
 		release(out3);
 		transmit(out4, 3);
 		release(out4);
-		transmit(out5, 4);
-		release(out5);
-		transmit(out6, 5);
-		release(out6);
+		// transmit(out5, 4);
+		// release(out5);
+		// transmit(out6, 5);
+		// release(out6);
 	} else if (new1 != NULL) {
 		// the DMA didn't fill blocks, but we allocated blocks
 		if (block_ch1 == NULL) {
@@ -213,8 +236,8 @@ void AudioInputI2SHex::update(void)
 			block_ch2 = new2;
 			block_ch3 = new3;
 			block_ch4 = new4;
-			block_ch5 = new5;
-			block_ch6 = new6;
+			// block_ch5 = new5;
+			// block_ch6 = new6;
 			block_offset = 0;
 			__enable_irq();
 		} else {
@@ -224,8 +247,8 @@ void AudioInputI2SHex::update(void)
 			release(new2);
 			release(new3);
 			release(new4);
-			release(new5);
-			release(new6);
+			// release(new5);
+			// release(new6);
 		}
 	} else {
 		// The DMA didn't fill blocks, and we could not allocate
@@ -235,11 +258,11 @@ void AudioInputI2SHex::update(void)
 	}
 }
 
-#else // not supported
+// #else // not supported
 
-void AudioInputI2SHex::begin(void)
-{
-}
+// void AudioInputI2SHex::begin(void)
+// {
+// }
 
 
 

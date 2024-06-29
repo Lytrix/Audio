@@ -36,20 +36,20 @@ audio_block_t * AudioOutputI2SHex::block_ch1_1st = NULL;
 audio_block_t * AudioOutputI2SHex::block_ch2_1st = NULL;
 audio_block_t * AudioOutputI2SHex::block_ch3_1st = NULL;
 audio_block_t * AudioOutputI2SHex::block_ch4_1st = NULL;
-audio_block_t * AudioOutputI2SHex::block_ch5_1st = NULL;
-audio_block_t * AudioOutputI2SHex::block_ch6_1st = NULL;
+// audio_block_t * AudioOutputI2SHex::block_ch5_1st = NULL;
+// audio_block_t * AudioOutputI2SHex::block_ch6_1st = NULL;
 audio_block_t * AudioOutputI2SHex::block_ch1_2nd = NULL;
 audio_block_t * AudioOutputI2SHex::block_ch2_2nd = NULL;
 audio_block_t * AudioOutputI2SHex::block_ch3_2nd = NULL;
 audio_block_t * AudioOutputI2SHex::block_ch4_2nd = NULL;
-audio_block_t * AudioOutputI2SHex::block_ch5_2nd = NULL;
-audio_block_t * AudioOutputI2SHex::block_ch6_2nd = NULL;
+// audio_block_t * AudioOutputI2SHex::block_ch5_2nd = NULL;
+// audio_block_t * AudioOutputI2SHex::block_ch6_2nd = NULL;
 uint32_t  AudioOutputI2SHex::ch1_offset = 0;
 uint32_t  AudioOutputI2SHex::ch2_offset = 0;
 uint32_t  AudioOutputI2SHex::ch3_offset = 0;
 uint32_t  AudioOutputI2SHex::ch4_offset = 0;
-uint32_t  AudioOutputI2SHex::ch5_offset = 0;
-uint32_t  AudioOutputI2SHex::ch6_offset = 0;
+// uint32_t  AudioOutputI2SHex::ch5_offset = 0;
+// uint32_t  AudioOutputI2SHex::ch6_offset = 0;
 bool AudioOutputI2SHex::update_responsibility = false;
 DMAMEM __attribute__((aligned(32))) static uint32_t i2s_tx_buffer[AUDIO_BLOCK_SAMPLES*3];
 DMAChannel AudioOutputI2SHex::dma(false);
@@ -64,42 +64,67 @@ void AudioOutputI2SHex::begin(void)
 	block_ch2_1st = NULL;
 	block_ch3_1st = NULL;
 	block_ch4_1st = NULL;
-	block_ch5_1st = NULL;
-	block_ch6_1st = NULL;
+	// block_ch5_1st = NULL;
+	// block_ch6_1st = NULL;
 
-	const int pinoffset = 0; // TODO: make this configurable...
+	// const int pinoffset = 0; // TODO: make this configurable...
 	memset(i2s_tx_buffer, 0, sizeof(i2s_tx_buffer));
 	AudioOutputI2S::config_i2s();
-	I2S1_TCR3 = I2S_TCR3_TCE_3CH << pinoffset;
-	switch (pinoffset) {
-	  case 0:
-		CORE_PIN7_CONFIG  = 3;
-		CORE_PIN32_CONFIG = 3;
-		CORE_PIN9_CONFIG  = 3;
-		break;
-	  case 1:
-		CORE_PIN32_CONFIG = 3;
-		CORE_PIN9_CONFIG  = 3;
-		CORE_PIN6_CONFIG  = 3;
-	}
+	// I2S1_TCR3 = I2S_TCR3_TCE_3CH << pinoffset;
+	// switch (pinoffset) {
+	//   case 0:
+	// 	CORE_PIN7_CONFIG  = 3;
+	// 	CORE_PIN32_CONFIG = 3;
+	// 	CORE_PIN9_CONFIG  = 3;
+	// 	break;
+	//   case 1:
+	// 	CORE_PIN32_CONFIG = 3;
+	// 	CORE_PIN9_CONFIG  = 3;
+	// 	CORE_PIN6_CONFIG  = 3;
+	// }
+
+	CORE_PIN7_CONFIG  = 3;  //1:TX_DATA0
+	CORE_PIN23_CONFIG = 3;  //1:MCLK
+	CORE_PIN21_CONFIG = 3;  //1:RX_BCLK
+	CORE_PIN20_CONFIG = 3;  //1:RX_SYNC
+
 	dma.TCD->SADDR = i2s_tx_buffer;
-	dma.TCD->SOFF = 2;
-	dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE(1) | DMA_TCD_ATTR_DSIZE(1);
-	dma.TCD->NBYTES_MLOFFYES = DMA_TCD_NBYTES_DMLOE |
-		DMA_TCD_NBYTES_MLOFFYES_MLOFF(-12) |
-		DMA_TCD_NBYTES_MLOFFYES_NBYTES(6);
-	dma.TCD->SLAST = -sizeof(i2s_tx_buffer);
-	dma.TCD->DADDR = (void *)((uint32_t)&I2S1_TDR0 + 2 + pinoffset * 4);
-	dma.TCD->DOFF = 4;
-	dma.TCD->CITER_ELINKNO = AUDIO_BLOCK_SAMPLES * 2;
-	dma.TCD->DLASTSGA = -12;
-	dma.TCD->BITER_ELINKNO = AUDIO_BLOCK_SAMPLES * 2;
-	dma.TCD->CSR = DMA_TCD_CSR_INTHALF | DMA_TCD_CSR_INTMAJOR;
-	dma.triggerAtHardwareEvent(DMAMUX_SOURCE_SAI1_TX);
+	dma.TCD->SOFF = 4; // how many bytes to jump from current address on the next move
+	dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE(2) | DMA_TCD_ATTR_DSIZE(2); // 1=16bits, 2=32 bits. size of source, size of dest
+	dma.TCD->NBYTES_MLNO = 4; // number of bytes to move, (minor loop?)
+	dma.TCD->SLAST = -sizeof(i2s_tx_buffer); // how many bytes to jump when hitting the end of the major loop. In this case, jump back to start of buffer
+	dma.TCD->DOFF = 0; // how many bytes to move the destination at each minor loop. In this case we're always writing to the same memory register.
+	dma.TCD->CITER_ELINKNO = sizeof(i2s_tx_buffer) / 4; // how many iterations are in the major loop
+	dma.TCD->DLASTSGA = 0; // how many bytes to jump the destination address at the end of the major loop
+	dma.TCD->BITER_ELINKNO = sizeof(i2s_tx_buffer) / 4; // beginning iteration count
+	dma.TCD->CSR = DMA_TCD_CSR_INTHALF | DMA_TCD_CSR_INTMAJOR; // Tells the DMA mechanism to trigger interrupt at half and full population of the buffer
+	dma.TCD->DADDR = (void *)((uint32_t)&I2S1_TDR0 + 0); // Destination address. for 16 bit values we use +2 byte offset from the I2S register. for 32 bits we use a zero offset.
+	dma.triggerAtHardwareEvent(DMAMUX_SOURCE_SAI1_TX); // run DMA at hardware event when new I2S data transmitted.
 	dma.enable();
+
+	// dma.TCD->SADDR = i2s_tx_buffer;
+	// dma.TCD->SOFF = 2;
+	// dma.TCD->ATTR = DMA_TCD_ATTR_SSIZE(1) | DMA_TCD_ATTR_DSIZE(1);
+	// dma.TCD->NBYTES_MLOFFYES = DMA_TCD_NBYTES_DMLOE |
+	// 	DMA_TCD_NBYTES_MLOFFYES_MLOFF(-12) |
+	// 	DMA_TCD_NBYTES_MLOFFYES_NBYTES(6);
+	// dma.TCD->SLAST = -sizeof(i2s_tx_buffer);
+	// dma.TCD->DADDR = (void *)((uint32_t)&I2S1_TDR0 + 2 + pinoffset * 4);
+	// dma.TCD->DOFF = 4;
+	// dma.TCD->CITER_ELINKNO = AUDIO_BLOCK_SAMPLES * 2;
+	// dma.TCD->DLASTSGA = -12;
+	// dma.TCD->BITER_ELINKNO = AUDIO_BLOCK_SAMPLES * 2;
+	// dma.TCD->CSR = DMA_TCD_CSR_INTHALF | DMA_TCD_CSR_INTMAJOR;
+	// dma.triggerAtHardwareEvent(DMAMUX_SOURCE_SAI1_TX);
+	// dma.enable();
+	// I2S1_RCSR |= I2S_RCSR_RE | I2S_RCSR_BCE;
+	// I2S1_TCSR = I2S_TCSR_TE | I2S_TCSR_BCE | I2S_TCSR_FRDE;
+	// I2S1_TCR3 = I2S_TCR3_TCE_3CH << pinoffset;
+
+	// Enabled transmitting and receiving
 	I2S1_RCSR |= I2S_RCSR_RE | I2S_RCSR_BCE;
 	I2S1_TCSR = I2S_TCSR_TE | I2S_TCSR_BCE | I2S_TCSR_FRDE;
-	I2S1_TCR3 = I2S_TCR3_TCE_3CH << pinoffset;
+	
 	update_responsibility = update_setup();
 	dma.attachInterrupt(isr);
 }
@@ -107,7 +132,7 @@ void AudioOutputI2SHex::begin(void)
 void AudioOutputI2SHex::isr(void)
 {
 	uint32_t saddr;
-	const int32_t *src1, *src2, *src3, *src4, *src5, *src6;
+	const int32_t *src1, *src2, *src3, *src4; //, *src5, *src6;
 	const int32_t *zeros = (const int32_t *)zerodata;
 	int32_t *dest;
 
@@ -126,22 +151,22 @@ void AudioOutputI2SHex::isr(void)
 	src2 = (block_ch2_1st) ? block_ch2_1st->data + ch2_offset : zeros;
 	src3 = (block_ch3_1st) ? block_ch3_1st->data + ch3_offset : zeros;
 	src4 = (block_ch4_1st) ? block_ch4_1st->data + ch4_offset : zeros;
-	src5 = (block_ch5_1st) ? block_ch5_1st->data + ch5_offset : zeros;
-	src6 = (block_ch6_1st) ? block_ch6_1st->data + ch6_offset : zeros;
-#if 0
+	//src5 = (block_ch5_1st) ? block_ch5_1st->data + ch5_offset : zeros;
+	//src6 = (block_ch6_1st) ? block_ch6_1st->data + ch6_offset : zeros;
+//#if 0
 	// TODO: optimized 6 channel copy...
-	memcpy_tointerleaveQuad(dest, src1, src2, src3, src4);
-#else
+//	memcpy_tointerleaveQuad(dest, src1, src2, src3, src4);
+//#else
 	int32_t *p=dest;
 	for (int i=0; i < AUDIO_BLOCK_SAMPLES/2; i++) {
 		*p++ = *src1++;
-		*p++ = *src3++;
-		*p++ = *src5++;
 		*p++ = *src2++;
+		//*p++ = *src5++;
+		*p++ = *src3++;
 		*p++ = *src4++;
-		*p++ = *src6++;
+		//*p++ = *src6++;
 	}
-#endif
+ #endif
 	arm_dcache_flush_delete(dest, sizeof(i2s_tx_buffer) / 2);
 
 	if (block_ch1_1st) {
@@ -184,26 +209,26 @@ void AudioOutputI2SHex::isr(void)
 			block_ch4_2nd = NULL;
 		}
 	}
-	if (block_ch5_1st) {
-		if (ch5_offset == 0) {
-			ch5_offset = AUDIO_BLOCK_SAMPLES/2;
-		} else {
-			ch5_offset = 0;
-			release(block_ch5_1st);
-			block_ch5_1st = block_ch5_2nd;
-			block_ch5_2nd = NULL;
-		}
-	}
-	if (block_ch6_1st) {
-		if (ch6_offset == 0) {
-			ch6_offset = AUDIO_BLOCK_SAMPLES/2;
-		} else {
-			ch6_offset = 0;
-			release(block_ch6_1st);
-			block_ch6_1st = block_ch6_2nd;
-			block_ch6_2nd = NULL;
-		}
-	}
+	// if (block_ch5_1st) {
+	// 	if (ch5_offset == 0) {
+	// 		ch5_offset = AUDIO_BLOCK_SAMPLES/2;
+	// 	} else {
+	// 		ch5_offset = 0;
+	// 		release(block_ch5_1st);
+	// 		block_ch5_1st = block_ch5_2nd;
+	// 		block_ch5_2nd = NULL;
+	// 	}
+	// }
+	// if (block_ch6_1st) {
+	// 	if (ch6_offset == 0) {
+	// 		ch6_offset = AUDIO_BLOCK_SAMPLES/2;
+	// 	} else {
+	// 		ch6_offset = 0;
+	// 		release(block_ch6_1st);
+	// 		block_ch6_1st = block_ch6_2nd;
+	// 		block_ch6_2nd = NULL;
+	// 	}
+	// }
 }
 
 
@@ -287,69 +312,69 @@ void AudioOutputI2SHex::update(void)
 			release(tmp);
 		}
 	}
-	block = receiveReadOnly(4); // channel 5
-	if (block) {
-		__disable_irq();
-		if (block_ch5_1st == NULL) {
-			block_ch5_1st = block;
-			ch5_offset = 0;
-			__enable_irq();
-		} else if (block_ch5_2nd == NULL) {
-			block_ch5_2nd = block;
-			__enable_irq();
-		} else {
-			tmp = block_ch5_1st;
-			block_ch5_1st = block_ch5_2nd;
-			block_ch5_2nd = block;
-			ch5_offset = 0;
-			__enable_irq();
-			release(tmp);
-		}
-	}
-	block = receiveReadOnly(5); // channel 6
-	if (block) {
-		__disable_irq();
-		if (block_ch6_1st == NULL) {
-			block_ch6_1st = block;
-			ch6_offset = 0;
-			__enable_irq();
-		} else if (block_ch6_2nd == NULL) {
-			block_ch6_2nd = block;
-			__enable_irq();
-		} else {
-			tmp = block_ch6_1st;
-			block_ch6_1st = block_ch6_2nd;
-			block_ch6_2nd = block;
-			ch6_offset = 0;
-			__enable_irq();
-			release(tmp);
-		}
-	}
+	// block = receiveReadOnly(4); // channel 5
+	// if (block) {
+	// 	__disable_irq();
+	// 	if (block_ch5_1st == NULL) {
+	// 		block_ch5_1st = block;
+	// 		ch5_offset = 0;
+	// 		__enable_irq();
+	// 	} else if (block_ch5_2nd == NULL) {
+	// 		block_ch5_2nd = block;
+	// 		__enable_irq();
+	// 	} else {
+	// 		tmp = block_ch5_1st;
+	// 		block_ch5_1st = block_ch5_2nd;
+	// 		block_ch5_2nd = block;
+	// 		ch5_offset = 0;
+	// 		__enable_irq();
+	// 		release(tmp);
+	// 	}
+	// }
+	// block = receiveReadOnly(5); // channel 6
+	// if (block) {
+	// 	__disable_irq();
+	// 	if (block_ch6_1st == NULL) {
+	// 		block_ch6_1st = block;
+	// 		ch6_offset = 0;
+	// 		__enable_irq();
+	// 	} else if (block_ch6_2nd == NULL) {
+	// 		block_ch6_2nd = block;
+	// 		__enable_irq();
+	// 	} else {
+	// 		tmp = block_ch6_1st;
+	// 		block_ch6_1st = block_ch6_2nd;
+	// 		block_ch6_2nd = block;
+	// 		ch6_offset = 0;
+	// 		__enable_irq();
+	// 		release(tmp);
+	// 	}
+	// }
 }
 
 
-#else // not supported
+// #else // not supported
 
-void AudioOutputI2SHex::begin(void)
-{
-}
+// void AudioOutputI2SHex::begin(void)
+// {
+// }
 
-void AudioOutputI2SHex::update(void)
-{
-	audio_block_t *block;
+// void AudioOutputI2SHex::update(void)
+// {
+// 	audio_block_t *block;
 
-	block = receiveReadOnly(0);
-	if (block) release(block);
-	block = receiveReadOnly(1);
-	if (block) release(block);
-	block = receiveReadOnly(2);
-	if (block) release(block);
-	block = receiveReadOnly(3);
-	if (block) release(block);
-	block = receiveReadOnly(4);
-	if (block) release(block);
-	block = receiveReadOnly(5);
-	if (block) release(block);
-}
+// 	block = receiveReadOnly(0);
+// 	if (block) release(block);
+// 	block = receiveReadOnly(1);
+// 	if (block) release(block);
+// 	block = receiveReadOnly(2);
+// 	if (block) release(block);
+// 	block = receiveReadOnly(3);
+// 	if (block) release(block);
+// 	// block = receiveReadOnly(4);
+// 	// if (block) release(block);
+// 	// block = receiveReadOnly(5);
+// 	// if (block) release(block);
+// }
 
-#endif
+//#endif
